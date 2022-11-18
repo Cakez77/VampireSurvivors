@@ -246,6 +246,7 @@ char *platform_read_file(char *path, uint32_t *fileSize)
           if (*fileSize < FILE_IO_BUFFER_SIZE)
           {
             // Use File IO Buffer
+						memset(fileIOBuffer, 0, FILE_IO_BUFFER_SIZE);
             buffer = fileIOBuffer;
             
             DWORD bytesRead;

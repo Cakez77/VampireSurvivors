@@ -1,4 +1,5 @@
 #include "render_interface.h"
+#include "shader_header.h"
 #include "custom_gl.h"
 
 //#############################################################
@@ -71,6 +72,7 @@ internal void init_open_gl_functions()
 	init_gl_func(glEnableVertexAttribArray);
 	init_gl_func(glVertexAttribPointer);
 	init_gl_func(glBindBuffer);
+	init_gl_func(glBindBufferBase);
 	init_gl_func(glBufferData);
 	init_gl_func(glGetVertexAttribPointerv);
 	init_gl_func(glUseProgram);
@@ -186,7 +188,7 @@ internal bool init_open_gl(void* window)
 		
 		int  contextAttributes[] = {
 			WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
-			WGL_CONTEXT_MINOR_VERSION_ARB, 2,
+			WGL_CONTEXT_MINOR_VERSION_ARB, 3,
 			WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_CORE_PROFILE_BIT_ARB,
 			
 #ifdef DEBUG
@@ -240,9 +242,24 @@ internal bool init_open_gl(void* window)
 	// Create Programs
 	{
 		uint32_t fileSize = 0;
+		char* tmpHeaderBuffer = platform_read_file("src/shader_header.h", &fileSize);
+		
+		// Scuffed malloc because file reading is done through a "fileIOBuffer" that 
+		// is being overwritten by multiple file reads
+		char* shaderHeader = (char*)malloc(fileSize);
+		CAKEZ_ASSERT(shaderHeader, "Failed to allocate Space for the Shader Header");
+		memcpy(shaderHeader, tmpHeaderBuffer, fileSize);
+		
 		char* vertexShader = platform_read_file("assets/shaders/quad.vert", &fileSize);
 		uint32_t vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-		glShaderSource(vertexShaderID, 1, &vertexShader, 0);
+		char* vertexSources[] = 
+		{
+			"#version 430 core\n",
+			shaderHeader,
+			vertexShader
+		};
+		
+		glShaderSource(vertexShaderID, ArraySize(vertexSources), vertexSources, 0);
 		glCompileShader(vertexShaderID);
 		
 		fileSize = 0;
@@ -260,13 +277,6 @@ internal bool init_open_gl(void* window)
 			if(!programSuccess)
 			{
 				glGetShaderInfoLog(fragShaderID, 512, 0, programInfoLog);
-				
-				// MessageBox(
-				// 	null,
-				// 	"Shader program failed to compile",
-				// 	"Error",
-				// 	MB_OK | MB_ICONERROR
-				// );
 				
 				CAKEZ_ASSERT(0, "Failed to compile shader program: %s", programInfoLog);
 				
@@ -292,42 +302,42 @@ internal bool init_open_gl(void* window)
 			{
 				glGetProgramInfoLog(glContext.programID, 512, 0, programInfoLog);
 				
-				// MessageBox(
-				// 	null,
-				// 	"Shader program failed to compile",
-				// 	"Error",
-				// 	MB_OK | MB_ICONERROR
-				// );
-				
 				CAKEZ_ASSERT(0, "Failed to compile shader program: %s", programInfoLog);
 				
 				return 0;
 			}
 		}
 		
+		free(shaderHeader);
+		
 		uint32_t VAO = 0;
 		glGenVertexArrays(1, &VAO);
 		glBindVertexArray(VAO);
 		
-		uint32_t VBO = 0;
-		glGenBuffers(1, &VBO);
-		glBindBuffer(GL_ARRAY_BUFFER, VBO);
 		
-		// Index is first
-		glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), 0);
-		glEnableVertexAttribArray(0);
-		
-		Vec2 vertices[6] =
+		Transform transforms[] =
 		{
-			{-0.5f,  0.5f}, // Top Left
-			{-0.5f, -0.5f}, // Bottom Left
-			{ 0.5f,  0.5f}, // Top Right
-			{ 0.5f,  0.5f}, // Top Right
-			{-0.5f, -0.5f}, // Bottom Left
-			{ 0.5f, -0.5f}, // Bottom Right
+			{-0.5f,  0.5f, 1.0f},
+			{-0.5f,  0.2f, 2.0f, 1},
+			{ 0.5f,  0.2f, 3.0f},
+			{ 0.75f, 0.2f, 4.0f, 1},
+			{ 0.5f, -0.2f, 0.2f},
 		};
 		
-		glBufferData(GL_ARRAY_BUFFER, sizeof(Vec2) * 6, vertices, GL_STATIC_DRAW);
+		
+		
+		uint32_t ssboID;
+		glGenBuffers(1, &ssboID);
+		glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboID);
+		
+		// This copies data to the buffer on the GPU, GL_DYNAIMC_DRAW?????
+		glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(transforms), transforms, GL_STATIC_DRAW);
+		
+		// Binds the SSBO to a binding Idx
+		glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssboID);
+		
+		//Undinds the buffer after usage???
+		//glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 	}
 	
 	return true;
@@ -342,7 +352,8 @@ internal bool gl_render()
 		glClear(GL_COLOR_BUFFER_BIT);
 		
 		glUseProgram(glContext.programID);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		
+		glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 5);
 		
 		SwapBuffers(glContext.dc);
 	}

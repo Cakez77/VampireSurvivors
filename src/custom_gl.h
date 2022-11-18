@@ -28,6 +28,7 @@ extern "C"
 	
 #define GL_TRUE                           1
 #define GL_ARRAY_BUFFER                   0x8892
+#define GL_SHADER_STORAGE_BUFFER          0x90D2
 #define GL_DYNAMIC_DRAW                   0x88E8
 #define GL_FALSE                          0
 #define GL_FLOAT                          0x1406
@@ -211,6 +212,7 @@ make_gl_func(glBindVertexArray, void, GLuint array);
 make_gl_func(glEnableVertexAttribArray, void, GLuint index);
 make_gl_func(glVertexAttribPointer, void, GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
 make_gl_func(glBindBuffer, void, GLenum target, GLuint buffer);
+make_gl_func(glBindBufferBase, void, GLenum target, GLuint index, GLuint buffer);
 make_gl_func(glBufferData, void, GLenum target, GLsizeiptr size, const GLvoid *data, GLenum usage);
 make_gl_func(glGetVertexAttribPointerv, void, GLuint index, GLenum pname, GLvoid **pointer);
 make_gl_func(glUseProgram, void, GLuint program);
