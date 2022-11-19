@@ -8,7 +8,7 @@
 
 struct Transform
 {
-	vec2 pos;
-	float size;
-	int blackFlag;
+  vec2 pos;
+  float size;
+  int blackFlag;
 };

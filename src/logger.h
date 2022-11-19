@@ -2,6 +2,7 @@
 
 #include "platform.h"
 
+
 // Standard Library for sprintf
 #include <stdio.h>
 
@@ -21,7 +22,7 @@ void _log(char *prefix, TextColor color, char *msg, Args... args)
 #define CAKEZ_FATAL(msg, ...) _log("FATAL", TEXT_COLOR_LIGHT_RED, msg, __VA_ARGS__)
 
 #ifdef DEBUG
-#define CAKEZ_ASSERT(x, msg, ...)          \
+#define CAKEZ_ASSERT(x, msg, ...)              \
 {                                          \
 if (!(x))                              \
 {                                      \

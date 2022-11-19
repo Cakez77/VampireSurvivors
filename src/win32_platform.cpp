@@ -16,44 +16,44 @@ global_variable HWND window;
 
 LRESULT CALLBACK window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	LRESULT result = 0;
-	
+  LRESULT result = 0;
+  
   switch (msg)
   {
     case WM_CLOSE:
     {
       running = false;
-			
-			break;
+      
+      break;
     }
     
     case WM_DESTROY:
     {
       PostQuitMessage(0);
-			
-			break;
+      
+      break;
     }
-		
-		case WM_SIZE:
-		{
-			// Set the Screen Size
-			RECT r;
-			GetClientRect(window, &r);
-			
-			input.screenSize.x = r.right - r.left;
-			input.screenSize.y = r.bottom - r.top;
-			
-			break;
-		}
-		
-		default:
-		{
-			result = DefWindowProcA(hwnd, msg, wParam, lParam);
-		}
-		
+    
+    case WM_SIZE:
+    {
+      // Set the Screen Size
+      RECT r;
+      GetClientRect(window, &r);
+      
+      input.screenSize.x = r.right - r.left;
+      input.screenSize.y = r.bottom - r.top;
+      
+      break;
+    }
+    
+    default:
+    {
+      result = DefWindowProcA(hwnd, msg, wParam, lParam);
+    }
+    
   }
   
-	return result;
+  return result;
 }
 
 internal bool platform_create_window(int width, int height, const char *title)
@@ -63,7 +63,7 @@ internal bool platform_create_window(int width, int height, const char *title)
   // Setup and register window class
   HICON icon = LoadIcon(instance, IDI_APPLICATION);
   WNDCLASS wc = {};
-	wc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
+  wc.style = CS_OWNDC | CS_HREDRAW | CS_VREDRAW;
   wc.lpfnWndProc = window_callback;
   wc.hInstance = instance;
   wc.hIcon = icon;
@@ -141,20 +141,20 @@ internal void platform_update_window()
 
 int main()
 {
-	fileIOBuffer = (char*)malloc(FILE_IO_BUFFER_SIZE);
-	
-	platform_create_window(500, 500, "Simple TD");
-	
-	init_open_gl(window);
-	
-	while(running)
-	{
-		platform_update_window();
-		
-		gl_render();
-	}
-	
-	return 0;
+  fileIOBuffer = (char*)malloc(FILE_IO_BUFFER_SIZE);
+  
+  platform_create_window(500, 500, "Simple TD");
+  
+  init_open_gl(window);
+  
+  while(running)
+  {
+    platform_update_window();
+    
+    gl_render();
+  }
+  
+  return 0;
 }
 
 
@@ -201,23 +201,23 @@ void platform_log(char *msg, TextColor color)
 
 void platform_print_error()
 {
-	int error_ = GetLastError();
-	LPTSTR error_text = 0;
-	
-	FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | 
-								FORMAT_MESSAGE_IGNORE_INSERTS,
-								0,
-								error_,
-								MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-								(LPTSTR)&error_text,
-								0,
-								0);
-	
-	if(error_text)
-	{
-		CAKEZ_ASSERT(0, "%s", error_text);
-		LocalFree(error_text);
-	}
+  int error_ = GetLastError();
+  LPTSTR error_text = 0;
+  
+  FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER | 
+                FORMAT_MESSAGE_IGNORE_INSERTS,
+                0,
+                error_,
+                MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+                (LPTSTR)&error_text,
+                0,
+                0);
+  
+  if(error_text)
+  {
+    CAKEZ_ASSERT(0, "%s", error_text);
+    LocalFree(error_text);
+  }
 }
 
 char *platform_read_file(char *path, uint32_t *fileSize)
@@ -246,7 +246,7 @@ char *platform_read_file(char *path, uint32_t *fileSize)
           if (*fileSize < FILE_IO_BUFFER_SIZE)
           {
             // Use File IO Buffer
-						memset(fileIOBuffer, 0, FILE_IO_BUFFER_SIZE);
+            memset(fileIOBuffer, 0, FILE_IO_BUFFER_SIZE);
             buffer = fileIOBuffer;
             
             DWORD bytesRead;
@@ -263,9 +263,9 @@ char *platform_read_file(char *path, uint32_t *fileSize)
           else
           {
             CAKEZ_ASSERT(0, "File size: %d, too large for File IO Buffer: %d", 
-												 *fileSize, FILE_IO_BUFFER_SIZE);
+                         *fileSize, FILE_IO_BUFFER_SIZE);
             CAKEZ_WARN("File size: %d, too large for File IO Buffer: %d", 
-											 *fileSize, FILE_IO_BUFFER_SIZE);
+                       *fileSize, FILE_IO_BUFFER_SIZE);
           }
         }
         else
