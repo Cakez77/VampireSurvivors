@@ -1,5 +1,5 @@
 version(2);
-project_name = "CakezFramework";
+project_name = "Simple Tower Defense";
 
 patterns = {
 "*.c",
