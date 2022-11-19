@@ -7,8 +7,18 @@
 //#############################################################
 struct GLContext
 {
+  bool initialized = false;
   HDC dc;
   uint32_t programID;
+  uint32_t screenSizeID;
+  uint32_t materialSBOID;
+  uint32_t transformSBOID;
+  
+  uint32_t materialCount;
+  Material materials[MAX_MATERIALS];
+  
+  uint32_t transformCount;
+  Transform transforms[MAX_TRANSFORMS];
 };
 
 
@@ -308,51 +318,99 @@ internal bool init_open_gl(void* window)
         return 0;
       }
     }
-    
     free(shaderHeader);
+    
     
     uint32_t VAO = 0;
     glGenVertexArrays(1, &VAO);
     glBindVertexArray(VAO);
     
-    
-    Transform transforms[] =
+    // Material Storage Buffer
     {
-      {-0.5f,  0.5f, 1.0f},
-      {-0.5f,  0.2f, 2.0f, 1},
-      { 0.5f,  0.2f, 3.0f},
-      { 0.75f, 0.2f, 4.0f, 1},
-      { 0.5f, -0.2f, 0.2f},
-    };
+      glGenBuffers(1, &glContext.materialSBOID);
+      
+      // Binds the SSBO to a binding Idx, only because we have one buffer
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, glContext.materialSBOID);
+    }
     
+    // Transform Stroage Buffer 
+    {
+      glGenBuffers(1, &glContext.transformSBOID);
+      
+      // Binds the SSBO to a binding Idx, only because we have one buffer
+      glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glContext.transformSBOID);
+    }
     
+    // TODO: Think
+    glUseProgram(glContext.programID);
     
-    uint32_t ssboID;
-    glGenBuffers(1, &ssboID);
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, ssboID);
-    
-    // This copies data to the buffer on the GPU, GL_DYNAIMC_DRAW?????
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(transforms), transforms, GL_STATIC_DRAW);
-    
-    // Binds the SSBO to a binding Idx
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, ssboID);
-    
-    //Undinds the buffer after usage???
-    //glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    // Supply Screen Size of the Shader
+    {
+      glContext.screenSizeID = glGetUniformLocation(glContext.programID, "screenSize");
+      glUniform2fv(glContext.screenSizeID, 1, (float*)&input.screenSize);
+    }
   }
   
+  glContext.initialized = true;
+  
   return true;
+}
+
+internal void add_transform(Transform t = {})
+{
+  if(glContext.transformCount < MAX_TRANSFORMS)
+  {
+    glContext.transforms[glContext.transformCount++] = t;
+  }
+  else
+  {
+    CAKEZ_ASSERT(0, "Reached maximum amount of transforms");
+  }
 }
 
 internal bool gl_render()
 {
   // Render Loop
   {
-    glViewport(0, 0, input.screenSize.x, input.screenSize.y);
     glClearColor(0.2f, 0.05f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     
-    glUseProgram(glContext.programID);
+    
+    glContext.materials[glContext.materialCount++] = {1.0f, 0.0f, 0.0f, 1.0f};
+    glContext.materials[glContext.materialCount++] = {0.0f, 0.0f, 1.0f, 1.0f};
+    
+    // Use the Buffer, (active)
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.materialSBOID);
+    
+    // Copy Data to GPU
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Material) * glContext.materialCount,
+                 glContext.materials, GL_STATIC_DRAW);
+    
+    //Undinds the buffer after usage (inactive)
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+    
+    glContext.materialCount = 0;
+    
+    // Draw quads
+    {
+      add_transform({100.0f,  200.0f, 100.0f, 200.0f});
+      add_transform({200.0f,  300.0f, 200.0f, 50.0f});
+    }
+    
+    // This copies data to the buffer on the GPU, GL_DYNAIMC_DRAW?????
+    {
+      // Use the Buffer, (active)
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.transformSBOID);
+      
+      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Transform) * glContext.transformCount,
+                   glContext.transforms, GL_STATIC_DRAW);
+      
+      //Undinds the buffer after usage (inactive)
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+      
+      glContext.transformCount = 0;
+    }
+    
     
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 5);
     
@@ -368,4 +426,13 @@ internal bool gl_render()
 //#############################################################
 void draw_quad(DrawData drawData)
 {
+}
+
+void renderer_resize()
+{
+  if(glContext.initialized)
+  {
+    glViewport(0, 0, input.screenSize.x, input.screenSize.y);
+    glUniform2fv(glContext.screenSizeID, 1, (float*)&input.screenSize);
+  }
 }

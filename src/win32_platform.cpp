@@ -43,6 +43,8 @@ LRESULT CALLBACK window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
       input.screenSize.x = r.right - r.left;
       input.screenSize.y = r.bottom - r.top;
       
+      renderer_resize();
+      
       break;
     }
     

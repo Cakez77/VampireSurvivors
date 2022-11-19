@@ -2,13 +2,17 @@
 
 #include "my_math.h"
 #define vec2 Vec2
+#define vec4 Vec4
 
 #endif
-
 
 struct Transform
 {
   vec2 pos;
-  float size;
-  int blackFlag;
+  vec2 size;
+};
+
+struct Material
+{
+  vec4 color;
 };

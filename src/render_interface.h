@@ -10,3 +10,5 @@ struct DrawData
 };
 
 void draw_quad(DrawData drawData);
+
+void renderer_resize();
