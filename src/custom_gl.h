@@ -49,7 +49,10 @@ extern "C"
 #define GL_TEXTURE_WRAP_S                 0x2802
 #define GL_TEXTURE_WRAP_T                 0x2803
 #define GL_REPEAT                         0x2901
+#define GL_NEAREST                        0x2600
 #define GL_LINEAR                         0x2601
+#define GL_LINEAR_MIPMAP_LINEAR           0x2703
+#define GL_LINEAR_MIPMAP_NEAREST          0x2701 
 #define GL_DEPTH_COMPONENT16              0x81A5
 #define GL_DEPTH_COMPONENT24              0x81A6
 #define GL_DEPTH_COMPONENT32              0x81A7

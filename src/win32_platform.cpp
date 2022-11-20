@@ -5,12 +5,19 @@
 #include "logger.h"
 #include "config.h"
 
-#include <windows.h>
+// Game Layer
+#include "game.cpp"
+
+// Asset Layer
+#include "assets.cpp"
 
 // Renderer Layer
+#include <windows.h>
 #include "gl_renderer.cpp"
 
 global_variable char* fileIOBuffer = 0;
+global_variable uint32_t transientBytesUsed = 0;
+global_variable char* transientBuffer = 0;
 global_variable bool running = true;
 global_variable HWND window;
 
@@ -141,17 +148,59 @@ internal void platform_update_window()
   }
 }
 
+
+
 int main()
 {
-  fileIOBuffer = (char*)malloc(FILE_IO_BUFFER_SIZE);
+  char* gameMemory = (char*)malloc(FILE_IO_BUFFER_SIZE + TRANSIENT_BUFFER_SIZE);
+  fileIOBuffer = gameMemory;
+  transientBuffer = gameMemory + FILE_IO_BUFFER_SIZE;
+  
+  // Delta Time Stuff
+  global_variable LARGE_INTEGER ticksPerSecond;
+  LARGE_INTEGER lastTickCount, currentTickCount;
+  QueryPerformanceFrequency(&ticksPerSecond);
+  QueryPerformanceCounter(&lastTickCount);
+  float dt = 0.0f;
   
   platform_create_window(500, 500, "Simple TD");
   
   init_open_gl(window);
   
+  init_game();
+  
   while(running)
   {
+    // Reset temporary memory
+    transientBytesUsed = 0;
+    
+    // Evaludate Delta Time
+    {
+      QueryPerformanceCounter(&currentTickCount);
+      
+      uint64_t elapsedTicks = currentTickCount.QuadPart - lastTickCount.QuadPart;
+      
+      // Convert to Microseconds to not loose precision, by deviding a small numbner by a large one
+      uint64_t elapsedTimeInMicroseconds = (elapsedTicks * 1000000) / ticksPerSecond.QuadPart;
+      
+      lastTickCount = currentTickCount;
+      
+      // Time in milliseconds
+      dt = (float)elapsedTimeInMicroseconds / 1000.0f;
+      
+      // Lock dt to 50ms
+      if (dt > 50.0f)
+      {
+        dt = 50.0f;
+      }
+      
+      // Time in seconds
+      dt /= 1000.0f;
+    }
+    
     platform_update_window();
+    
+    update_game(dt);
     
     gl_render();
   }
@@ -292,6 +341,23 @@ char *platform_read_file(char *path, uint32_t *fileSize)
   {
     CAKEZ_ASSERT(0, "No Length supplied!");
     CAKEZ_WARN("No Length supplied!");
+  }
+  
+  return buffer;
+}
+
+char* platform_allocate_transient(uint32_t sizeInBytes)
+{
+  char* buffer = 0;
+  
+  if(transientBytesUsed + sizeInBytes < TRANSIENT_BUFFER_SIZE)
+  {
+    buffer = transientBuffer + transientBytesUsed;
+    transientBytesUsed += sizeInBytes;
+  }
+  else
+  {
+    CAKEZ_ASSERT(0, "Exausted Transient Storage!");
   }
   
   return buffer;

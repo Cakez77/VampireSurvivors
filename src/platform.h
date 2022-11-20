@@ -12,4 +12,7 @@ enum TextColor
 
 void platform_log(char *msg, TextColor color);
 void platform_print_error();
-char *platform_read_file(char *path, uint32_t *fileSize);
+char* platform_read_file(char *path, uint32_t *fileSize);
+
+// Annoying function needed because stb_image.h allocates FUCKING memory, AND I DON'T LIKE THAT
+char* platform_allocate_transient(uint32_t sizeInBytes);

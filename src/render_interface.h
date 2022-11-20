@@ -1,8 +1,10 @@
 #pragma once
+#include "assets.h"
 #include "my_math.h"
 
 struct DrawData
 {
+  SpriteID spriteID = SPRITE_WHITE;
   Vec2 pos;
   Vec2 size;
   

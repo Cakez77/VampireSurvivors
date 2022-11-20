@@ -13,6 +13,7 @@ struct GLContext
   uint32_t screenSizeID;
   uint32_t materialSBOID;
   uint32_t transformSBOID;
+  uint32_t textureID;
   
   uint32_t materialCount;
   Material materials[MAX_MATERIALS];
@@ -341,7 +342,33 @@ internal bool init_open_gl(void* window)
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glContext.transformSBOID);
     }
     
-    // TODO: Think
+    // 
+    {
+      glGenTextures(1, &glContext.textureID);
+      glBindTexture(GL_TEXTURE_2D, glContext.textureID);
+      
+      // set the texture wrapping/filtering options (on the currently bound texture object)
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      
+      // load and generate the texture
+      int width = 0, height = 0;
+      char* data = get_asset(TEXTURE_ATLAS_01, &width, &height);
+      if (data)
+      {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+        glGenerateMipmap(GL_TEXTURE_2D);
+      }
+      else
+      {
+        CAKEZ_ASSERT(0, "Failed to get data for TextureID: %d", TEXTURE_ATLAS_01);
+      }
+    }
+    
+    
+    // TODO: Think, about what?
     glUseProgram(glContext.programID);
     
     // Supply Screen Size of the Shader
@@ -379,29 +406,20 @@ internal bool gl_render()
     glContext.materials[glContext.materialCount++] = {1.0f, 0.0f, 0.0f, 1.0f};
     glContext.materials[glContext.materialCount++] = {0.0f, 0.0f, 1.0f, 1.0f};
     
-    // Use the Buffer, (active)
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.materialSBOID);
-    
-    // Copy Data to GPU
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Material) * glContext.materialCount,
-                 glContext.materials, GL_STATIC_DRAW);
-    
-    //Undinds the buffer after usage (inactive)
-    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
-    
-    glContext.materialCount = 0;
-    
-    // Draw quads
+    // Copy Materials to GPU
     {
-      add_transform({100.0f,  200.0f, 100.0f, 200.0f});
-      add_transform({200.0f,  300.0f, 200.0f, 50.0f});
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.materialSBOID);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Material) * glContext.materialCount,
+                   glContext.materials, GL_STATIC_DRAW);
+      glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+      
+      glContext.materialCount = 0;
     }
     
-    // This copies data to the buffer on the GPU, GL_DYNAIMC_DRAW?????
+    // Copy Transforms to GPU
     {
       // Use the Buffer, (active)
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.transformSBOID);
-      
       glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Transform) * glContext.transformCount,
                    glContext.transforms, GL_STATIC_DRAW);
       
@@ -410,7 +428,6 @@ internal bool gl_render()
       
       glContext.transformCount = 0;
     }
-    
     
     glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 5);
     
@@ -426,6 +443,14 @@ internal bool gl_render()
 //#############################################################
 void draw_quad(DrawData drawData)
 {
+  Sprite s = get_sprite(drawData.spriteID);
+  Transform t = {};
+  t.pos = drawData.pos;
+  t.size = drawData.size;
+  t.atlasOffset = s.atlasOffset;
+  t.spriteSize = s.subSize;
+  
+  add_transform(t);
 }
 
 void renderer_resize()

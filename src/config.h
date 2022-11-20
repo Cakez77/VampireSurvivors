@@ -4,10 +4,18 @@
 //#############################################################
 //                  File I/O
 //#############################################################
-const uint32_t FILE_IO_BUFFER_SIZE = MB(5);
+constexpr uint32_t FILE_IO_BUFFER_SIZE = MB(5);
+constexpr uint32_t TRANSIENT_BUFFER_SIZE = MB(5);
 
 //#############################################################
 //                  Rendering
 //#############################################################
-const uint32_t MAX_TRANSFORMS = 1000;
-const uint32_t MAX_MATERIALS = 100;
+constexpr uint32_t MAX_TRANSFORMS = 1000;
+constexpr uint32_t MAX_MATERIALS = 100;
+
+//#############################################################
+//                  Game
+//#############################################################
+constexpr uint32_t MAX_WAYPOINTS = 10;
+constexpr uint32_t MAX_TOWERS = 100;
+constexpr uint32_t MAX_ENEMIES = 1000;
