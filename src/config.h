@@ -17,5 +17,4 @@ constexpr uint32_t MAX_MATERIALS = 100;
 //                  Game
 //#############################################################
 constexpr uint32_t MAX_WAYPOINTS = 10;
-constexpr uint32_t MAX_TOWERS = 100;
 constexpr uint32_t MAX_ENEMIES = 1000;

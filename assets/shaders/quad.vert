@@ -41,14 +41,38 @@ void main()
   color = materials[gl_InstanceID].color;
 
   // Texture Coords
+  float left;
+  float right;
+  float top;
+  float bottom;
+  if(t.flipX)
+  {
+    left = t.atlasOffset.x + t.spriteSize.x;
+    right = t.atlasOffset.x;
+  }
+  else
+  {
+    left = t.atlasOffset.x;
+    right = t.atlasOffset.x + t.spriteSize.x;
+  }
+  if(t.flipY)
+  {
+    top = t.atlasOffset.y + t.spriteSize.y;
+    bottom = t.atlasOffset.y;
+  }
+  else
+  {
+    top = t.atlasOffset.y;
+    bottom = t.atlasOffset.y + t.spriteSize.y;
+  }
   ivec2 textureCoords[6] = 
   {
-    t.atlasOffset,                                    // Top Left
-    ivec2(t.atlasOffset + ivec2(0, t.spriteSize.y)),  // Bottom Left
-    ivec2(t.atlasOffset + ivec2(t.spriteSize.x, 0)),  // Top Right
-    ivec2(t.atlasOffset + ivec2(t.spriteSize.x, 0)),  // Top Right
-    ivec2(t.atlasOffset + ivec2(0, t.spriteSize.y)),  // Bottom Left
-    ivec2(t.atlasOffset + t.spriteSize)               // Bottom Right
+    ivec2(left, top),                                 
+    ivec2(left, bottom),
+    ivec2(right, top),
+    ivec2(right, top),
+    ivec2(left, bottom),
+    ivec2(right, bottom)
   };
   textureCoordsOut = textureCoords[gl_VertexID];
   

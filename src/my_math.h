@@ -78,11 +78,16 @@ float length(Vec2 v)
 
 Vec2 normalize(Vec2 v)
 {
-  float vecLenght = length(v);
-  if (vecLenght <= 0)
+  float vecLength = length(v);
+  if (vecLength <= 0)
     return Vec2{0.0f, 0.0f};
   
   return Vec2{
-    v.x / vecLenght,
-    v.y / vecLenght};
+    v.x / vecLength,
+    v.y / vecLength};
+}
+
+internal float sinf2(float t)
+{
+  return sinf(t) * 0.5f + 0.5f;
 }

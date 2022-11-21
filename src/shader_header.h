@@ -9,6 +9,8 @@
 
 struct Transform
 {
+  int flipX;
+  int flipY;
   vec2 pos;
   vec2 size;
   ivec2 atlasOffset;

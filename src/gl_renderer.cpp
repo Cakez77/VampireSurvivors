@@ -484,6 +484,8 @@ void draw_quad(DrawData drawData)
   t.size = drawData.size;
   t.atlasOffset = s.atlasOffset;
   t.spriteSize = s.subSize;
+  t.flipX = drawData.flipX;
+  t.flipY = drawData.flipY;
   
   add_transform(t);
 }
