@@ -178,13 +178,17 @@ int main()
   QueryPerformanceCounter(&lastTickCount);
   float dt = 0.0f;
   
-  platform_create_window(1280, 720, "VSClone");
+  platform_create_window(WORLD_SIZE.x, WORLD_SIZE.y, "VSClone");
   
   init_open_gl(window);
   // @Note(tkap, 21/11/2022): To not blow up my pc
   renderer_set_vertical_sync(true);
   
   init_game();
+  
+  // Seed for random numbers
+  srand((uint32_t)__rdtsc());
+  
   
   while(running)
   {

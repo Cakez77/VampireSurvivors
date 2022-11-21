@@ -13,14 +13,31 @@ enum WeaponID
   WEAPON_COUNT,
 };
 
+// Needed for Fucking rand() function, CRINGE
+#include <cstdLib>
+
+struct SpawnBreakPoint
+{
+  float time;
+  int spawnAmount;
+};
+
+SpawnBreakPoint spawnBreakPoints[] =
+{
+  {0.0f, 10}, // Between 0 and 1 Seconds, spawn 10
+  {1.0f, 10}, // Between 1 and 5 Seconds, spawn 10
+  {5.0f, 10},
+  {10.0f, 20},
+  {12.0f, 0},
+};
+
+
 struct Entity
 {
-  SpriteID spriteID;
+  SpriteID spriteID = SPRITE_ENEMY_01;
   Vec2 pos;
   float scale = 3.0f;
   Vec4 color = COLOR_WHITE;
-  
-  int reachedWaypointIdx = -1;
   
   int hp;
   int attack;
@@ -75,6 +92,10 @@ struct GameState
 {
   float totalTime;
   
+  int currentSpawnBreakPoint;
+  float spawnsPerSecond;
+  int spawnCounter;
+  
   uint32_t enemyCount;
   Entity enemies[MAX_ENEMIES];
   
@@ -85,9 +106,22 @@ struct GameState
   DamagingArea damagingAreas[MAX_DAMAGING_AREAS];
   
   Player player;
+  float playerScreenEdgeDist;
 };
 
 global_variable GameState gameState = {};
+
+internal SpawnBreakPoint* get_next_spawn_break_point()
+{
+  SpawnBreakPoint* next = 0;
+  
+  if(gameState.currentSpawnBreakPoint + 1 < ArraySize(spawnBreakPoints))
+  {
+    next = &spawnBreakPoints[gameState.currentSpawnBreakPoint + 1];
+  }
+  
+  return next;
+}
 
 internal void add_damaging_area(Vec2 pos, Vec2 size, float duration);
 
@@ -97,6 +131,7 @@ internal void init_game()
   
   gameState.player.pos.x = input.screenSize.x / 2;
   gameState.player.pos.y = input.screenSize.y / 2;
+  gameState.playerScreenEdgeDist = length(vec_2(WORLD_SIZE - WORLD_SIZE / 2)) + 50.0f;
 }
 
 
@@ -106,7 +141,18 @@ internal void update_game(float dt)
   
   // Spawning System
   {
-    
+    if(((int)(gameState.totalTime * 10.0f) % 10) == 0)
+    {
+      // In Radians
+      float randomAngle = (float)(rand() % 360) * 3.14f / 180.0f;
+      
+      Vec2 playerPos = gameState.player.pos;
+      Vec2 spawnDirection = {cosf(randomAngle), sinf(randomAngle)};
+      Vec2 spawnPos = playerPos + spawnDirection * gameState.playerScreenEdgeDist;
+      
+      Entity enemy = {.pos = spawnPos};
+      gameState.enemies[gameState.enemyCount++] = enemy;
+    }
   }
   
   for(uint32_t enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
@@ -115,6 +161,10 @@ internal void update_game(float dt)
     
     // 50 Pixels per second
     float movementDistance = 200.0f * dt;
+    
+    Vec2 direction = normalize(gameState.player.pos - enemy->pos);
+    
+    enemy->pos += direction * movementDistance;
     
     // Draw Enemy 
     {
@@ -262,7 +312,7 @@ internal void update_game(float dt)
       draw_quad({ .spriteID = SPRITE_ENEMY_01, .pos = da->pos, 
                   .size = vec_2(s.subSize) * da->size * percent_left,
                   .color = COLOR_WHITE});
-                  
+      
       da->timePassed += dt;
       if(da->timePassed > da->duration)
       {
@@ -270,7 +320,7 @@ internal void update_game(float dt)
         gameState.damagingAreas[da_i] = gameState.damagingAreas[gameState.damagingAreasCount];
         da_i -= 1;
       }
-                  
+      
       // @TODO(tkap, 21/11/2022): Loop through enemies and damage them
     }
   }
