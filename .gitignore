@@ -3,3 +3,5 @@
 *.pdb
 *.obj
 *.exe
+tkap_build.bat
+.vs

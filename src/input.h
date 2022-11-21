@@ -1,80 +1,115 @@
 #pragma once 
 #include "my_math.h"
 
-enum KeyCode
+
+global_variable constexpr int KEY_COUNT = 255;
+
+global_variable constexpr int KEY_BACKSPACE = 0x08;
+global_variable constexpr int KEY_TAB = 0x09;
+global_variable constexpr int KEY_ENTER = 0x0D;
+global_variable constexpr int KEY_ALT = 0x12;
+global_variable constexpr int KEY_ESCAPE = 0x1B;
+global_variable constexpr int KEY_SPACE = 0x20;
+global_variable constexpr int KEY_END = 0x23;
+global_variable constexpr int KEY_HOME = 0x24;
+global_variable constexpr int KEY_LEFT = 0x25;
+global_variable constexpr int KEY_UP = 0x26;
+global_variable constexpr int KEY_RIGHT = 0x27;
+global_variable constexpr int KEY_DOWN = 0x28;
+global_variable constexpr int KEY_DELETE = 0x2E;
+
+global_variable constexpr int KEY_0 = 0x30;
+global_variable constexpr int KEY_1 = 0x31;
+global_variable constexpr int KEY_2 = 0x32;
+global_variable constexpr int KEY_3 = 0x33;
+global_variable constexpr int KEY_4 = 0x34;
+global_variable constexpr int KEY_5 = 0x35;
+global_variable constexpr int KEY_6 = 0x36;
+global_variable constexpr int KEY_7 = 0x37;
+global_variable constexpr int KEY_8 = 0x38;
+global_variable constexpr int KEY_9 = 0x39;
+global_variable constexpr int KEY_A = 0x41;
+global_variable constexpr int KEY_B = 0x42;
+global_variable constexpr int KEY_C = 0x43;
+global_variable constexpr int KEY_D = 0x44;
+global_variable constexpr int KEY_E = 0x45;
+global_variable constexpr int KEY_F = 0x46;
+global_variable constexpr int KEY_G = 0x47;
+global_variable constexpr int KEY_H = 0x48;
+global_variable constexpr int KEY_I = 0x49;
+global_variable constexpr int KEY_J = 0x4A;
+global_variable constexpr int KEY_K = 0x4B;
+global_variable constexpr int KEY_L = 0x4C;
+global_variable constexpr int KEY_M = 0x4D;
+global_variable constexpr int KEY_N = 0x4E;
+global_variable constexpr int KEY_O = 0x4F;
+global_variable constexpr int KEY_P = 0x50;
+global_variable constexpr int KEY_Q = 0x51;
+global_variable constexpr int KEY_R = 0x52;
+global_variable constexpr int KEY_S = 0x53;
+global_variable constexpr int KEY_T = 0x54;
+global_variable constexpr int KEY_U = 0x55;
+global_variable constexpr int KEY_V = 0x56;
+global_variable constexpr int KEY_W = 0x57;
+global_variable constexpr int KEY_X = 0x58;
+global_variable constexpr int KEY_Y = 0x59;
+global_variable constexpr int KEY_Z = 0x5A;
+global_variable constexpr int KEY_ADD = 0x6B;
+global_variable constexpr int KEY_SUBTRACT = 0x6D;
+
+global_variable constexpr int KEY_F1 = 0x70;
+global_variable constexpr int KEY_F2 = 0x71;
+global_variable constexpr int KEY_F3 = 0x72;
+global_variable constexpr int KEY_F4 = 0x73;
+global_variable constexpr int KEY_F5 = 0x74;
+global_variable constexpr int KEY_F6 = 0x75;
+global_variable constexpr int KEY_F7 = 0x76;
+global_variable constexpr int KEY_F8 = 0x77;
+global_variable constexpr int KEY_F9 = 0x78;
+global_variable constexpr int KEY_F10 = 0x79;
+global_variable constexpr int KEY_F11 = 0x7A;
+global_variable constexpr int KEY_F12 = 0x7B;
+
+global_variable constexpr int KEY_LEFT_SHIFT = 0xA0;
+global_variable constexpr int KEY_RIGHT_SHIFT = 0xA1;
+global_variable constexpr int KEY_LEFT_CONTROL = 0xA2;
+global_variable constexpr int KEY_RIGHT_CONTROL = 0xA3;
+
+
+struct KeyState
 {
-  KEY_LEFT_MOUSE,
-  KEY_MIDDLE_MOUSE,
-  KEY_RIGHT_MOUSE,
-  
-  KEY_A, KEY_B, KEY_C, KEY_D, KEY_E, KEY_F, KEY_G, KEY_H, KEY_I, KEY_J,
-  KEY_K, KEY_L, KEY_M, KEY_N, KEY_O, KEY_P, KEY_Q, KEY_R, KEY_S, KEY_T,
-  KEY_U, KEY_V, KEY_W, KEY_X, KEY_Y, KEY_Z,
-  
-  KEY_0, KEY_1, KEY_2, KEY_3, KEY_4, KEY_5, KEY_6, KEY_7, KEY_8, KEY_9,
-  
-  KEY_SPACE,
-  KEY_TICK,
-  KEY_MINUS,
-  KEY_EQUAL,
-  KEY_LEFT_BRACKET,
-  KEY_RIGHT_BRACKET,
-  KEY_SEMICOLON,
-  KEY_QUOTE,
-  KEY_COMMA,
-  KEY_PERIOD,
-  KEY_FORWARD_SLASH,
-  KEY_BACKWARD_SLASH,
-  KEY_TAB,
-  KEY_ESCAPE,
-  KEY_PAUSE,
-  KEY_UP,
-  KEY_DOWN,
-  KEY_LEFT,
-  KEY_RIGHT,
-  KEY_BACKSPACE,
-  KEY_RETURN,
-  KEY_DELETE,
-  KEY_INSERT,
-  KEY_HOME,
-  KEY_END,
-  KEY_PAGE_UP,
-  KEY_PAGE_DOWN,
-  KEY_CAPS_LOCK,
-  KEY_NUM_LOCK,
-  KEY_SCROLL_LOCK,
-  KEY_MENU,
-  KEY_SHIFT,
-  KEY_CONTROL,
-  KEY_ALT,
-  KEY_COMMAND,
-  
-  KEY_F1, KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, 
-  KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_F11, KEY_F12,
-  
-  KEY_NUMPAD_0,
-  KEY_NUMPAD_1,
-  KEY_NUMPAD_2,
-  KEY_NUMPAD_3,
-  KEY_NUMPAD_4,
-  KEY_NUMPAD_5,
-  KEY_NUMPAD_6,
-  KEY_NUMPAD_7,
-  KEY_NUMPAD_8,
-  KEY_NUMPAD_9,
-  
-  KEY_NUMPAD_STAR,
-  KEY_NUMPAD_PLUS,
-  KEY_NUMPAD_MINUS,
-  KEY_NUMPAD_DOT,
-  KEY_NUMPAD_SLASH,
-  
-  KEY_COUNT = 255,
+  int halfTransitionCount;
+  bool isDown;
 };
 
 struct Input
 {
   Vec2 screenSize;
+  KeyState keys[KEY_COUNT];
 };
 
 global_variable Input input;
+
+internal bool is_key_down(int key)
+{
+  bool result = input.keys[key].isDown;
+  return result;
+}
+
+internal bool is_key_up(int key)
+{
+  bool result = !input.keys[key].isDown;
+  return result;
+}
+
+internal bool is_key_pressed(int key)
+{
+  bool result = (input.keys[key].isDown && input.keys[key].halfTransitionCount == 1) || input.keys[key].halfTransitionCount > 1;
+  return result;
+}
+
+internal bool is_key_released(int key)
+{
+  bool result = (!input.keys[key].isDown && input.keys[key].halfTransitionCount == 1) || input.keys[key].halfTransitionCount > 1;
+  return result;
+}
