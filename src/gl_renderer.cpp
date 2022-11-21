@@ -464,10 +464,10 @@ internal bool gl_render()
       //Undinds the buffer after usage (inactive)
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
       
+      glDrawArraysInstanced(GL_TRIANGLES, 0, 6, glContext.transformCount);
       glContext.transformCount = 0;
     }
     
-    glDrawArraysInstanced(GL_TRIANGLES, 0, 6, 5);
     
     SwapBuffers(glContext.dc);
   }
