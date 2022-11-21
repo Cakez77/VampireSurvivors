@@ -1,5 +1,5 @@
 version(2);
-project_name = "Simple Tower Defense";
+project_name = "Vampire Survivors Clone";
 
 patterns = {
 "*.c",

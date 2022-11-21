@@ -20,6 +20,7 @@ global_variable uint32_t transientBytesUsed = 0;
 global_variable char* transientBuffer = 0;
 global_variable bool running = true;
 global_variable HWND window;
+global_variable KeyCode keyCodeLookupTable[KEY_COUNT] = {};
 
 LRESULT CALLBACK window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
@@ -151,7 +152,120 @@ internal void platform_update_window()
 
 
 int main()
-{
+{ 
+  // KeyCode lookup Table
+  {
+    keyCodeLookupTable[VK_LBUTTON] = KEY_LEFT_MOUSE;
+    keyCodeLookupTable[VK_MBUTTON] = KEY_MIDDLE_MOUSE;
+    keyCodeLookupTable[VK_RBUTTON] = KEY_RIGHT_MOUSE;
+    
+    keyCodeLookupTable['A'] = KEY_A;
+    keyCodeLookupTable['B'] = KEY_B;
+    keyCodeLookupTable['C'] = KEY_C;
+    keyCodeLookupTable['D'] = KEY_D;
+    keyCodeLookupTable['E'] = KEY_E;
+    keyCodeLookupTable['F'] = KEY_F;
+    keyCodeLookupTable['G'] = KEY_G;
+    keyCodeLookupTable['H'] = KEY_H;
+    keyCodeLookupTable['I'] = KEY_I;
+    keyCodeLookupTable['J'] = KEY_J;
+    keyCodeLookupTable['K'] = KEY_K;
+    keyCodeLookupTable['L'] = KEY_L;
+    keyCodeLookupTable['M'] = KEY_M;
+    keyCodeLookupTable['N'] = KEY_N;
+    keyCodeLookupTable['O'] = KEY_O;
+    keyCodeLookupTable['P'] = KEY_P;
+    keyCodeLookupTable['Q'] = KEY_Q;
+    keyCodeLookupTable['R'] = KEY_R;
+    keyCodeLookupTable['S'] = KEY_S;
+    keyCodeLookupTable['T'] = KEY_T;
+    keyCodeLookupTable['U'] = KEY_U;
+    keyCodeLookupTable['V'] = KEY_V;
+    keyCodeLookupTable['W'] = KEY_W;
+    keyCodeLookupTable['X'] = KEY_X;
+    keyCodeLookupTable['Y'] = KEY_Y;
+    keyCodeLookupTable['Z'] = KEY_Z;
+    keyCodeLookupTable['0'] = KEY_0;
+    keyCodeLookupTable['1'] = KEY_1;
+    keyCodeLookupTable['2'] = KEY_2;
+    keyCodeLookupTable['3'] = KEY_3;
+    keyCodeLookupTable['4'] = KEY_4;
+    keyCodeLookupTable['5'] = KEY_5;
+    keyCodeLookupTable['6'] = KEY_6;
+    keyCodeLookupTable['7'] = KEY_7;
+    keyCodeLookupTable['8'] = KEY_8;
+    keyCodeLookupTable['9'] = KEY_9;
+    
+    keyCodeLookupTable[VK_SPACE] = KEY_SPACE,
+    keyCodeLookupTable[VK_OEM_3] = KEY_TICK,
+    keyCodeLookupTable[VK_OEM_MINUS] = KEY_MINUS,
+    // TODO ???
+    keyCodeLookupTable[VK_OEM_PLUS] = KEY_EQUAL,
+    keyCodeLookupTable[VK_OEM_4] = KEY_LEFT_BRACKET,
+    keyCodeLookupTable[VK_OEM_6] = KEY_RIGHT_BRACKET,
+    keyCodeLookupTable[VK_OEM_1] = KEY_SEMICOLON,
+    keyCodeLookupTable[VK_OEM_7] = KEY_QUOTE,
+    keyCodeLookupTable[VK_OEM_COMMA] = KEY_COMMA,
+    keyCodeLookupTable[VK_OEM_PERIOD] = KEY_PERIOD,
+    keyCodeLookupTable[VK_OEM_2] = KEY_FORWARD_SLASH,
+    keyCodeLookupTable[VK_OEM_5] = KEY_BACKWARD_SLASH,
+    keyCodeLookupTable[VK_TAB] = KEY_TAB,
+    keyCodeLookupTable[VK_ESCAPE] = KEY_ESCAPE,
+    keyCodeLookupTable[VK_PAUSE] = KEY_PAUSE,
+    keyCodeLookupTable[VK_UP] = KEY_UP,
+    keyCodeLookupTable[VK_DOWN] = KEY_DOWN,
+    keyCodeLookupTable[VK_LEFT] = KEY_LEFT,
+    keyCodeLookupTable[VK_RIGHT] = KEY_RIGHT,
+    keyCodeLookupTable[VK_BACK] = KEY_BACKSPACE,
+    keyCodeLookupTable[VK_RETURN] = KEY_RETURN,
+    keyCodeLookupTable[VK_DELETE] = KEY_DELETE,
+    keyCodeLookupTable[VK_INSERT] = KEY_INSERT,
+    keyCodeLookupTable[VK_HOME] = KEY_HOME,
+    keyCodeLookupTable[VK_END] = KEY_END,
+    keyCodeLookupTable[VK_PRIOR] = KEY_PAGE_UP,
+    keyCodeLookupTable[VK_NEXT] = KEY_PAGE_DOWN,
+    keyCodeLookupTable[VK_CAPITAL] = KEY_CAPS_LOCK,
+    keyCodeLookupTable[VK_NUMLOCK] = KEY_NUM_LOCK,
+    keyCodeLookupTable[VK_SCROLL] = KEY_SCROLL_LOCK,
+    keyCodeLookupTable[VK_APPS] = KEY_MENU,
+    
+    keyCodeLookupTable[VK_SHIFT] = KEY_SHIFT,
+    keyCodeLookupTable[VK_LSHIFT] = KEY_SHIFT,
+    keyCodeLookupTable[VK_RSHIFT] = KEY_SHIFT,
+    
+    keyCodeLookupTable[VK_CONTROL] = KEY_CONTROL,
+    keyCodeLookupTable[VK_LCONTROL] = KEY_CONTROL,
+    keyCodeLookupTable[VK_RCONTROL] = KEY_CONTROL,
+    
+    keyCodeLookupTable[VK_MENU] = KEY_ALT,
+    keyCodeLookupTable[VK_LMENU] = KEY_ALT,
+    keyCodeLookupTable[VK_RMENU] = KEY_ALT,
+    
+    keyCodeLookupTable[VK_F1] = KEY_F1;
+    keyCodeLookupTable[VK_F2] = KEY_F2;
+    keyCodeLookupTable[VK_F3] = KEY_F3;
+    keyCodeLookupTable[VK_F4] = KEY_F4;
+    keyCodeLookupTable[VK_F5] = KEY_F5;
+    keyCodeLookupTable[VK_F6] = KEY_F6;
+    keyCodeLookupTable[VK_F7] = KEY_F7;
+    keyCodeLookupTable[VK_F8] = KEY_F8;
+    keyCodeLookupTable[VK_F9] = KEY_F9;
+    keyCodeLookupTable[VK_F10] = KEY_F10;
+    keyCodeLookupTable[VK_F11] = KEY_F11;
+    keyCodeLookupTable[VK_F12] = KEY_F12;
+    
+    keyCodeLookupTable[VK_NUMPAD0] = KEY_NUMPAD_0;
+    keyCodeLookupTable[VK_NUMPAD1] = KEY_NUMPAD_1;
+    keyCodeLookupTable[VK_NUMPAD2] = KEY_NUMPAD_2;
+    keyCodeLookupTable[VK_NUMPAD3] = KEY_NUMPAD_3;
+    keyCodeLookupTable[VK_NUMPAD4] = KEY_NUMPAD_4;
+    keyCodeLookupTable[VK_NUMPAD5] = KEY_NUMPAD_5;
+    keyCodeLookupTable[VK_NUMPAD6] = KEY_NUMPAD_6;
+    keyCodeLookupTable[VK_NUMPAD7] = KEY_NUMPAD_7;
+    keyCodeLookupTable[VK_NUMPAD8] = KEY_NUMPAD_8;
+    keyCodeLookupTable[VK_NUMPAD9] = KEY_NUMPAD_9;
+  }
+  
   char* gameMemory = (char*)malloc(FILE_IO_BUFFER_SIZE + TRANSIENT_BUFFER_SIZE);
   fileIOBuffer = gameMemory;
   transientBuffer = gameMemory + FILE_IO_BUFFER_SIZE;

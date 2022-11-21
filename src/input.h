@@ -74,7 +74,7 @@ enum KeyCode
 
 struct Input
 {
-	Vec2 screenSize;
+  Vec2 screenSize;
 };
 
 global_variable Input input;
