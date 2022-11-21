@@ -40,12 +40,12 @@ void main()
 
   color = materials[gl_InstanceID].color;
 
-  // Texture Coords
+  // Texture Coords, with flipping
   float left;
   float right;
   float top;
   float bottom;
-  if(t.flipX)
+  if(bool(t.renderOptions & RENDER_OPTION_FLIP_X))
   {
     left = t.atlasOffset.x + t.spriteSize.x;
     right = t.atlasOffset.x;
@@ -55,7 +55,7 @@ void main()
     left = t.atlasOffset.x;
     right = t.atlasOffset.x + t.spriteSize.x;
   }
-  if(t.flipY)
+  if(bool(t.renderOptions & RENDER_OPTION_FLIP_Y))
   {
     top = t.atlasOffset.y + t.spriteSize.y;
     bottom = t.atlasOffset.y;

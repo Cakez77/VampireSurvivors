@@ -9,3 +9,5 @@
 #define GB(x) ((uint64_t)1024 * MB(x))
 
 #define ArraySize(arr) sizeof((arr)) / sizeof((arr)[0])
+
+#define BIT(x) (1u << (x))

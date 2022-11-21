@@ -10,9 +10,12 @@ struct Texture
   uint32_t ID;
   long long lastEditTimestamp;
 };
+
 struct GLContext
 {
   bool initialized = false;
+  bool vSync = true;
+  
   HDC dc;
   uint32_t programID;
   uint32_t screenSizeID;
@@ -484,10 +487,20 @@ void draw_quad(DrawData drawData)
   t.size = drawData.size;
   t.atlasOffset = s.atlasOffset;
   t.spriteSize = s.subSize;
-  t.flipX = drawData.flipX;
-  t.flipY = drawData.flipY;
+  t.renderOptions = drawData.renderOptions;
   
   add_transform(t);
+}
+
+bool renderer_get_vertical_sync()
+{
+  return glContext.vSync;
+}
+
+void renderer_set_vertical_sync(bool vSync)
+{
+  glContext.vSync = vSync;
+  wglSwapIntervalEXT(vSync);
 }
 
 void renderer_resize()

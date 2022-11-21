@@ -178,9 +178,11 @@ int main()
   QueryPerformanceCounter(&lastTickCount);
   float dt = 0.0f;
   
-  platform_create_window(500, 500, "Simple TD");
+  platform_create_window(1280, 720, "VSClone");
   
   init_open_gl(window);
+  // @Note(tkap, 21/11/2022): To not blow up my pc
+  renderer_set_vertical_sync(true);
   
   init_game();
   
@@ -222,9 +224,6 @@ int main()
     }
     
     gl_render();
-    
-    // @Note(tkap, 21/11/2022): Sleep to not blow up my pc
-    Sleep(1);
   }
   
   return 0;
