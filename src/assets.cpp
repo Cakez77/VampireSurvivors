@@ -44,6 +44,15 @@ Sprite get_sprite(SpriteID spriteID)
       break;
     }
     
+    case SPRITE_HERO_KARATE_MAN:
+    {
+      s.atlasOffset = {96, 0};
+      s.size = {48, 48};
+      s.subSize = {48, 48};
+      
+      break;
+    }
+    
     default: 
     {
       CAKEZ_ASSERT(0, "Unrecognized spriteID: %d", spriteID);
