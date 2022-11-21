@@ -86,3 +86,8 @@ Vec2 normalize(Vec2 v)
     v.x / vecLength,
     v.y / vecLength};
 }
+
+internal float sinf2(float t)
+{
+  return sinf(t) * 0.5f + 0.5f;
+}

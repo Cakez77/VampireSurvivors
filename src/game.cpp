@@ -23,6 +23,9 @@ struct Player
 
 struct GameState
 {
+  
+  float totalTime;
+  
   int waypointCount;
   Vec2 waypoints[MAX_WAYPOINTS];
   
@@ -54,6 +57,8 @@ internal void init_game()
 
 internal void update_game(float dt)
 {
+  gameState.totalTime += dt;
+  
   for(uint32_t enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
   {
     Entity* enemy = &gameState.enemies[enemyIdx];
@@ -119,8 +124,8 @@ internal void update_game(float dt)
 
     {
       Sprite s = get_sprite(SPRITE_ENEMY_01);
-      draw_quad({.spriteID = SPRITE_ENEMY_01, .pos = p->pos, 
-      .size = vec_2(s.subSize) * 3,
+      draw_quad({.flipX = false, .spriteID = SPRITE_ENEMY_01, .pos = p->pos, 
+      .size = vec_2(s.subSize) * (10 + sinf2(gameState.totalTime * 10) * 0.5f),
       .color = COLOR_WHITE});
     }
   }
