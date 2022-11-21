@@ -16,16 +16,20 @@ struct Entity
   int attack;
 };
 
+struct Player
+{
+  Vec2 pos;
+};
+
 struct GameState
 {
   int waypointCount;
   Vec2 waypoints[MAX_WAYPOINTS];
   
-  uint32_t towerCount;
-  Entity towers[MAX_TOWERS];
-  
   uint32_t enemyCount;
   Entity enemies[MAX_ENEMIES];
+  
+  Player player;
 };
 
 global_variable GameState gameState = {};
@@ -50,11 +54,6 @@ internal void init_game()
 
 internal void update_game(float dt)
 {
-  for(uint32_t towerIdx = 0; towerIdx < gameState.towerCount; towerIdx++)
-  {
-    // Do something 
-  }
-  
   for(uint32_t enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
   {
     Entity* enemy = &gameState.enemies[enemyIdx];
@@ -90,6 +89,39 @@ internal void update_game(float dt)
       draw_quad({.spriteID = enemy->spriteID, .pos = enemy->pos, 
                   .size = vec_2(s.subSize) * enemy->scale,
                   .color = enemy->color });
+    }
+  }
+  
+  // @Note(tkap, 21/11/2022): Update player
+  {
+    Player* p = &gameState.player;
+
+    Vec2 dir = {};
+    if(is_key_down(KEY_W))
+    {
+      dir.y -= 1;
+    }
+    if(is_key_down(KEY_A))
+    {
+      dir.x -= 1;
+    }
+    if(is_key_down(KEY_S))
+    {
+      dir.y += 1;
+    }
+    if(is_key_down(KEY_D))
+    {
+      dir.x += 1;
+    }
+    dir = normalize(dir);
+
+    p->pos += dir * dt * 400;
+
+    {
+      Sprite s = get_sprite(SPRITE_ENEMY_01);
+      draw_quad({.spriteID = SPRITE_ENEMY_01, .pos = p->pos, 
+      .size = vec_2(s.subSize) * 3,
+      .color = COLOR_WHITE});
     }
   }
 }

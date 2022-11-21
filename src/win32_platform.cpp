@@ -222,6 +222,9 @@ int main()
     }
     
     gl_render();
+    
+    // @Note(tkap, 21/11/2022): Sleep to not blow up my pc
+    Sleep(1);
   }
   
   return 0;

@@ -1,2 +1,2 @@
-# SimpleTowerDefense
-I small and simple 2D tower defense game made with OpenGL
+# Vampire Survivors Clone
+A small and simple Vampire Survivors clone made with OpenGL
