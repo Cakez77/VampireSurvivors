@@ -94,6 +94,9 @@ internal void add_damaging_area(Vec2 pos, Vec2 size, float duration);
 internal void init_game()
 {
   gameState.player.unlockedWeapons[WEAPON_WHIP] = true;
+  
+  gameState.player.pos.x = input.screenSize.x / 2;
+  gameState.player.pos.y = input.screenSize.y / 2;
 }
 
 
@@ -169,10 +172,10 @@ internal void update_game(float dt)
         
         Weapon* w = &p->weapons[weapon_i];
         w->timePassed += dt;
-        constexpr float skillDelay = 3;
-        while(w->timePassed > skillDelay)
+        constexpr float skillCooldown = 1;
+        while(w->timePassed > skillCooldown)
         {
-          w->timePassed -= skillDelay;
+          w->timePassed -= skillCooldown;
           
           ActiveWeapon aw = {};
           aw.player = *p;
@@ -221,11 +224,11 @@ internal void update_game(float dt)
           {
             data->subTimePassed -= subDelay;
             constexpr Vec2 offsets[] = {
-              {100, 0},
-              {-100, 0},
-              {0, -100},
+              {150, 0},
+              {-150, -50},
+              {0, -150},
             };
-            add_damaging_area(aw->pos + offsets[data->index], {5, 5}, 1); 
+            add_damaging_area(aw->pos + offsets[data->index], {20, 5}, 0.5f); 
             data->index += 1;
           }
           
@@ -254,9 +257,10 @@ internal void update_game(float dt)
     {
       DamagingArea* da = &gameState.damagingAreas[da_i];
       
+      float percent_left = 1.0f - da->timePassed / da->duration;
       Sprite s = get_sprite(SPRITE_ENEMY_01);
       draw_quad({ .spriteID = SPRITE_ENEMY_01, .pos = da->pos, 
-                  .size = vec_2(s.subSize) * da->size,
+                  .size = vec_2(s.subSize) * da->size * percent_left,
                   .color = COLOR_WHITE});
                   
       da->timePassed += dt;

@@ -53,7 +53,7 @@ Vec2 operator*(Vec2 a, Vec2 other)
 {
   return Vec2{
     a.x * other.x,
-    a.y * other.x};
+    a.y * other.y};
 }
 
 Vec2 operator*(Vec2 a, float scalar)
