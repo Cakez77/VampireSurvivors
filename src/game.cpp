@@ -124,7 +124,7 @@ internal void update_game(float dt)
 
     {
       Sprite s = get_sprite(SPRITE_ENEMY_01);
-      draw_quad({.flipX = false, .spriteID = SPRITE_ENEMY_01, .pos = p->pos, 
+      draw_quad({.flipX = dir.x > 0, .spriteID = SPRITE_ENEMY_01, .pos = p->pos, 
       .size = vec_2(s.subSize) * (10 + sinf2(gameState.totalTime * 10) * 0.5f),
       .color = COLOR_WHITE});
     }

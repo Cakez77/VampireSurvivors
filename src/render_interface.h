@@ -4,8 +4,8 @@
 
 struct DrawData
 {
-  int flipX;
-  int flipY;
+  bool flipX;
+  bool flipY;
   SpriteID spriteID = SPRITE_WHITE;
   Vec2 pos;
   Vec2 size;
