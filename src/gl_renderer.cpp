@@ -5,6 +5,11 @@
 //#############################################################
 //                  Internal Structures
 //#############################################################
+struct Texture
+{
+  uint32_t ID;
+  long long lastEditTimestamp;
+};
 struct GLContext
 {
   bool initialized = false;
@@ -13,7 +18,7 @@ struct GLContext
   uint32_t screenSizeID;
   uint32_t materialSBOID;
   uint32_t transformSBOID;
-  uint32_t textureID;
+  Texture textureAtlas01;
   
   uint32_t materialCount;
   Material materials[MAX_MATERIALS];
@@ -344,8 +349,8 @@ internal bool init_open_gl(void* window)
     
     // 
     {
-      glGenTextures(1, &glContext.textureID);
-      glBindTexture(GL_TEXTURE_2D, glContext.textureID);
+      glGenTextures(1, &glContext.textureAtlas01.ID);
+      glBindTexture(GL_TEXTURE_2D, glContext.textureAtlas01.ID);
       
       // set the texture wrapping/filtering options (on the currently bound texture object)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
@@ -358,6 +363,9 @@ internal bool init_open_gl(void* window)
       char* data = get_asset(TEXTURE_ATLAS_01, &width, &height);
       if (data)
       {
+        glContext.textureAtlas01.lastEditTimestamp = get_last_edit_timestamp(TEXTURE_ATLAS_01);
+        CAKEZ_ASSERT(glContext.textureAtlas01.lastEditTimestamp > 0,
+                     "Failed getting edit Timestamp from TextureID: %d", TEXTURE_ATLAS_01);
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
         glGenerateMipmap(GL_TEXTURE_2D);
       }
@@ -395,6 +403,30 @@ internal void add_transform(Transform t = {})
   }
 }
 
+internal void hot_reload_textures()
+{
+  long long lastEditTimestamp = get_last_edit_timestamp(TEXTURE_ATLAS_01);
+  
+  if(lastEditTimestamp > glContext.textureAtlas01.lastEditTimestamp)
+  {
+    // load and generate the texture
+    int width = 0, height = 0;
+    char* data = get_asset(TEXTURE_ATLAS_01, &width, &height);
+    if (data)
+    {
+      glContext.textureAtlas01.lastEditTimestamp = get_last_edit_timestamp(TEXTURE_ATLAS_01);
+      CAKEZ_ASSERT(glContext.textureAtlas01.lastEditTimestamp > 0,
+                   "Failed getting edit Timestamp from TextureID: %d", TEXTURE_ATLAS_01);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+      glGenerateMipmap(GL_TEXTURE_2D);
+    }
+    else
+    {
+      CAKEZ_ASSERT(0, "Failed to get data for TextureID: %d", TEXTURE_ATLAS_01);
+    }
+  }
+}
+
 internal bool gl_render()
 {
   // Render Loop
@@ -402,6 +434,9 @@ internal bool gl_render()
     glClearColor(0.2f, 0.05f, 0.2f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
     
+#ifdef DEBUG
+    hot_reload_textures();
+#endif
     
     glContext.materials[glContext.materialCount++] = {1.0f, 0.0f, 0.0f, 1.0f};
     glContext.materials[glContext.materialCount++] = {0.0f, 0.0f, 1.0f, 1.0f};

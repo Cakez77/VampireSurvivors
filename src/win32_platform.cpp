@@ -460,6 +460,36 @@ char *platform_read_file(char *path, uint32_t *fileSize)
   return buffer;
 }
 
+long long platform_last_edit_timestamp(char* path)
+{
+  long long time = 0;
+  
+  HANDLE file = CreateFile(path, GENERIC_READ, FILE_SHARE_WRITE,
+                           0, OPEN_EXISTING, 0, 0);
+  
+  if (file != INVALID_HANDLE_VALUE)
+  {
+    FILETIME writeTime;
+    if (GetFileTime(file, 0, 0, &writeTime))
+    {
+      ULARGE_INTEGER tmp = {writeTime.dwLowDateTime, writeTime.dwHighDateTime};
+      time = tmp.QuadPart;
+    }
+    else
+    {
+      CAKEZ_WARN("Failed getting file time of file %s ", path);
+    }
+    
+    CloseHandle(file);
+  }
+  else
+  {
+    CAKEZ_WARN("Failed opening file %s", path);
+  }
+  
+  return time;
+}
+
 char* platform_allocate_transient(uint32_t sizeInBytes)
 {
   char* buffer = 0;

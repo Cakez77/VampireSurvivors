@@ -28,4 +28,9 @@ struct Sprite
 Sprite get_sprite(SpriteID spriteID);
 
 
+//#############################################################
+//                  Textures Interface
+//#############################################################
 char* get_asset(TextureID textureID, int* width, int* height);
+long long get_last_edit_timestamp(TextureID textureID);
+

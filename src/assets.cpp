@@ -74,3 +74,8 @@ char* get_asset(TextureID textureID, int* width, int* height)
   
   return data;
 }
+
+long long get_last_edit_timestamp(TextureID textureID)
+{
+  return platform_last_edit_timestamp(TEXTURE_PATHS[textureID]);
+}
