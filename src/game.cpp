@@ -169,9 +169,7 @@ internal void update_game(float dt)
     // Draw Enemy 
     {
       Sprite s = get_sprite(enemy->spriteID);
-      draw_quad({.spriteID = enemy->spriteID, .pos = enemy->pos, 
-                  .size = vec_2(s.subSize) * enemy->scale,
-                  .color = enemy->color });
+      draw_sprite(enemy->spriteID, enemy->pos, v2(enemy->scale), enemy->color);
     }
   }
   
@@ -238,11 +236,10 @@ internal void update_game(float dt)
     
     // Draw Hero
     {
-      Sprite s = get_sprite(p->spriteID);
-      draw_quad({ .spriteID = p->spriteID, .pos = p->pos, 
-                  .size = vec_2(s.subSize) * (1.5f + sinf2(gameState.totalTime * 10) * 0.125f),
-                  .color = COLOR_WHITE,
-                  .renderOptions = p->flipX ? RENDER_OPTION_FLIP_X : 0});
+      draw_sprite(
+        p->spriteID, p->pos, v2(1.5f + sinf2(gameState.totalTime * 10) * 0.125f),
+        COLOR_WHITE, p->flipX ? RENDER_OPTION_FLIP_X : 0
+      );
     }
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE PLAYER END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -308,10 +305,7 @@ internal void update_game(float dt)
       DamagingArea* da = &gameState.damagingAreas[da_i];
       
       float percent_left = 1.0f - da->timePassed / da->duration;
-      Sprite s = get_sprite(SPRITE_ENEMY_01);
-      draw_quad({ .spriteID = SPRITE_ENEMY_01, .pos = da->pos, 
-                  .size = vec_2(s.subSize) * da->size * percent_left,
-                  .color = COLOR_WHITE});
+      draw_sprite(SPRITE_ENEMY_01, da->pos, da->size * percent_left, COLOR_WHITE);
       
       da->timePassed += dt;
       if(da->timePassed > da->duration)

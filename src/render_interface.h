@@ -19,7 +19,9 @@ struct DrawData
 //#############################################################
 //                  Draw Functions
 //#############################################################
-void draw_quad(DrawData drawData);
+void draw_transform(DrawData drawData);
+void draw_quad(Vec2 pos, Vec2 size, Vec4 color, RenderOptions renderOptions = 0);
+void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 scale, Vec4 color, RenderOptions renderOptions = 0);
 
 
 //#############################################################

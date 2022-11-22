@@ -479,7 +479,9 @@ internal bool gl_render()
 //#############################################################
 //           Implementations from render_interface.h
 //#############################################################
-void draw_quad(DrawData drawData)
+
+// @Note(tkap, 22/11/2022): Not the best name
+void draw_transform(DrawData drawData)
 {
   Sprite s = get_sprite(drawData.spriteID);
   Transform t = {};
@@ -488,8 +490,19 @@ void draw_quad(DrawData drawData)
   t.atlasOffset = s.atlasOffset;
   t.spriteSize = s.subSize;
   t.renderOptions = drawData.renderOptions;
-  
   add_transform(t);
+}
+
+void draw_quad(Vec2 pos, Vec2 size, Vec4 color, RenderOptions renderOptions)
+{
+  draw_transform({.pos = pos, .size = size, .color = color, .renderOptions = renderOptions});
+}
+
+void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 scale, Vec4 color, RenderOptions renderOptions)
+{
+  Sprite s = get_sprite(spriteID);
+  Vec2 subSize = v2(s.subSize.x, s.subSize.y);
+  draw_transform({.spriteID = spriteID, .pos = pos, .size = subSize * scale, .color = color, .renderOptions = renderOptions});
 }
 
 bool renderer_get_vertical_sync()
