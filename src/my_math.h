@@ -67,7 +67,7 @@ Vec2 operator/(Vec2 a, Vec2 other)
 {
   return Vec2{
     a.x / other.x,
-    a.y / other.x};
+    a.y / other.y};
 }
 
 Vec2 operator/(Vec2 a, float scalar)
@@ -81,14 +81,14 @@ IVec2 operator-(IVec2 a, IVec2 other)
 {
   return IVec2{
     a.x - other.x,
-    a.y - other.x};
+    a.y - other.y};
 }
 
 IVec2 operator/(IVec2 a, IVec2 other)
 {
   return IVec2{
     a.x / other.x,
-    a.y / other.x};
+    a.y / other.y};
 }
 
 IVec2 operator/(IVec2 a, int scalar)
