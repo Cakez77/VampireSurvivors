@@ -36,7 +36,7 @@ struct Entity
 {
   SpriteID spriteID = SPRITE_ENEMY_01;
   Vec2 pos;
-  float scale = 3.0f;
+  float scale = 1.5f;
   Vec4 color = COLOR_WHITE;
   
   int hp;
@@ -240,7 +240,7 @@ internal void update_game(float dt)
     {
       Sprite s = get_sprite(p->spriteID);
       draw_quad({ .spriteID = p->spriteID, .pos = p->pos, 
-                  .size = vec_2(s.subSize) * (3 + sinf2(gameState.totalTime * 10) * 0.25f),
+                  .size = vec_2(s.subSize) * (1.5f + sinf2(gameState.totalTime * 10) * 0.125f),
                   .color = COLOR_WHITE,
                   .renderOptions = p->flipX ? RENDER_OPTION_FLIP_X : 0});
     }
@@ -278,7 +278,7 @@ internal void update_game(float dt)
               {-150, -50},
               {0, -150},
             };
-            add_damaging_area(aw->pos + offsets[data->index], {20, 5}, 0.5f); 
+            add_damaging_area(aw->pos + offsets[data->index], {10, 2.5f}, 0.5f); 
             data->index += 1;
           }
           

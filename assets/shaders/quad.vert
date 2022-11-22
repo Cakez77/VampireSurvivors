@@ -20,18 +20,18 @@ layout(std430, binding = 1) buffer MaterialSBO
 void main()
 {
   // From -0.5 to 0.5 -> 1.0 -> size is 1 unit length, Counter Clockwise
+  float v_size = 1.0;
   vec2 vertices[6] = 
   {
-    vec2(-0.5,  0.5), // Top Left
-    vec2(-0.5, -0.5), // Bottom Left
-    vec2( 0.5,  0.5), // Top Right
-    vec2( 0.5,  0.5), // Top Right
-    vec2(-0.5, -0.5), // Bottom Left
-    vec2( 0.5, -0.5)  // Bottom Right
+    vec2(-v_size,  v_size), // Top Left
+    vec2(-v_size, -v_size), // Bottom Left
+    vec2( v_size,  v_size), // Top Right
+    vec2( v_size,  v_size), // Top Right
+    vec2(-v_size, -v_size), // Bottom Left
+    vec2( v_size, -v_size)  // Bottom Right
   };
 
   Transform t = transforms[gl_InstanceID];
-
 
   // Inverts the Y- Coordinate, so that y = 0 is on the top
   t.pos.y = -t.pos.y + screenSize.y;
