@@ -24,7 +24,7 @@ struct Transform
   ivec2 atlasOffset;
   ivec2 spriteSize;
   int renderOptions;
-  int padding;
+  int materialIdx;
 };
 
 struct Material

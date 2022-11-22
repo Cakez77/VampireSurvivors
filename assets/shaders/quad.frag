@@ -17,5 +17,5 @@ void main()
     discard;
   }
 
-  fragColor = textureColor;
+  fragColor = textureColor * color;
 }

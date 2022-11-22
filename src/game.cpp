@@ -36,8 +36,10 @@ struct Entity
 {
   SpriteID spriteID = SPRITE_ENEMY_01;
   Vec2 pos;
-  float scale = 1.5f;
+  float scale = UNIT_SCALE;
   Vec4 color = COLOR_WHITE;
+  
+  Circle collider  = {{0.0f, 0.0f}, 20.0f};
   
   int hp;
   int attack;
@@ -54,6 +56,8 @@ struct Player
   SpriteID spriteID = SPRITE_HERO_KARATE_MAN;
   Vec2 pos;
   float speed = 400.0f;
+  
+  Circle collider ={{0.0f, 0.0f}, 12.0f};
   
   bool unlockedWeapons[WEAPON_COUNT];
   Weapon weapons[WEAPON_COUNT];
@@ -85,8 +89,6 @@ struct DamagingArea
   Vec2 pos;
   Vec2 size;
 };
-
-
 
 struct GameState
 {
@@ -123,6 +125,11 @@ internal SpawnBreakPoint* get_next_spawn_break_point()
   return next;
 }
 
+internal Circle get_collider(Entity e)
+{
+  return {e.pos + e.collider.pos, e.collider.radius};
+}
+
 internal void add_damaging_area(Vec2 pos, Vec2 size, float duration);
 
 internal void init_game()
@@ -141,7 +148,7 @@ internal void update_game(float dt)
   
   // Spawning System
   {
-    if(((int)(gameState.totalTime * 10.0f) % 10) == 0)
+    if(((int)(gameState.totalTime * 10.0f) % 50) == 0)
     {
       // In Radians
       float randomAngle = (float)(rand() % 360) * 3.14f / 180.0f;
@@ -155,21 +162,71 @@ internal void update_game(float dt)
     }
   }
   
-  for(uint32_t enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
+  for(int enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
   {
     Entity* enemy = &gameState.enemies[enemyIdx];
     
     // 50 Pixels per second
-    float movementDistance = 200.0f * dt;
+    float movementDistance = 100.0f * dt;
     
     Vec2 direction = normalize(gameState.player.pos - enemy->pos);
-    
     enemy->pos += direction * movementDistance;
+  }
+  
+  // Resolve Collisions
+  {
+    int iterationCount = 2;
+    float pushoutFactor = 0.1f / (float)iterationCount;
     
-    // Draw Enemy 
+    for(int iterationIdx = 0; iterationIdx < iterationCount; iterationIdx++)
     {
+      for(int enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
+      {
+        Entity* enemyA = &gameState.enemies[enemyIdx];
+        
+        for(int enemyBIdx = 0; enemyBIdx < gameState.enemyCount; enemyBIdx++)
+        {
+          Entity* enemyB = &gameState.enemies[enemyBIdx];
+          
+          // Skip yourself
+          if(enemyA == enemyB)
+          {
+            continue;
+          }
+          
+          Circle colliderA = get_collider(*enemyA);
+          Circle colliderB = get_collider(*enemyB);
+          
+          // Check for Circle Collision and push away both Enemies
+          {
+            float pushout = 0.0f;
+            Vec2 direction = colliderB.pos - colliderA.pos;
+            
+            float distanceSquared = length_squared(direction);
+            if(distanceSquared < 
+               (colliderA.radius + colliderB.radius) * 
+               (colliderA.radius + colliderB.radius))
+            {
+              pushout = (float)sqrt(distanceSquared) - colliderA.radius - colliderB.radius;
+              
+              Vec2 directionNormalized = normalize(direction);
+              
+              enemyA->pos += direction * pushout * pushoutFactor;
+              enemyB->pos -= direction * pushout * pushoutFactor;
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  // Draw Enemies
+  {
+    for(int enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
+    {
+      Entity* enemy = &gameState.enemies[enemyIdx];
       Sprite s = get_sprite(enemy->spriteID);
-      draw_sprite(enemy->spriteID, enemy->pos, v2(enemy->scale), enemy->color);
+      draw_sprite(enemy->spriteID, enemy->pos, vec_2(enemy->scale), enemy->color);
     }
   }
   
@@ -236,10 +293,8 @@ internal void update_game(float dt)
     
     // Draw Hero
     {
-      draw_sprite(
-        p->spriteID, p->pos, v2(1.5f + sinf2(gameState.totalTime * 10) * 0.125f),
-        COLOR_WHITE, p->flipX ? RENDER_OPTION_FLIP_X : 0
-      );
+      draw_sprite(p->spriteID, p->pos, vec_2(UNIT_SCALE + sinf2(gameState.totalTime * 10) * 0.125f),
+                  COLOR_WHITE, p->flipX ? RENDER_OPTION_FLIP_X : 0);
     }
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE PLAYER END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

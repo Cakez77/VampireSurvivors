@@ -406,6 +406,38 @@ internal void add_transform(Transform t = {})
   }
 }
 
+internal int get_material_idx(Vec4 color)
+{
+  int idx = 0;
+  bool foundMaterial = false;
+  
+  for(int materialIdx = 0; materialIdx < glContext.materialCount; materialIdx++)
+  {
+    if(glContext.materials[materialIdx].color == color)
+    {
+      idx = materialIdx;
+      foundMaterial = true;
+      break;
+    }
+  }
+  
+  if(!foundMaterial)
+  {
+    Material m = {color};
+    
+    if(glContext.materialCount < MAX_MATERIALS)
+    {
+      glContext.materials[glContext.materialCount++] = m;
+    }
+    else
+    {
+      CAKEZ_ASSERT(0, "Reached maximum amount of materials");
+    }
+  }
+  
+  return idx;
+}
+
 internal void hot_reload_textures()
 {
   long long lastEditTimestamp = get_last_edit_timestamp(TEXTURE_ATLAS_01);
@@ -490,6 +522,7 @@ void draw_transform(DrawData drawData)
   t.atlasOffset = s.atlasOffset;
   t.spriteSize = s.subSize;
   t.renderOptions = drawData.renderOptions;
+  t.materialIdx = get_material_idx(drawData.color);
   add_transform(t);
 }
 
@@ -501,8 +534,38 @@ void draw_quad(Vec2 pos, Vec2 size, Vec4 color, RenderOptions renderOptions)
 void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 scale, Vec4 color, RenderOptions renderOptions)
 {
   Sprite s = get_sprite(spriteID);
-  Vec2 subSize = v2(s.subSize.x, s.subSize.y);
-  draw_transform({.spriteID = spriteID, .pos = pos, .size = subSize * scale, .color = color, .renderOptions = renderOptions});
+  Vec2 subSize = vec_2(s.subSize.x, s.subSize.y);
+  draw_transform({ .spriteID = spriteID, .pos = pos, .size = subSize * scale, 
+                   .color = color, .renderOptions = renderOptions});
+}
+
+void draw_line(Vec2 a, Vec2 b, Vec4 color)
+{
+  // TODO: Optimize this, use angle, rotation in shader
+  float lineLength = length(b - a);
+  Vec2 direction = normalize(b - a);
+  
+  draw_quad(a + direction * 0.0f * lineLength, {2.0f, 2.0f}, color);
+  draw_quad(a + direction * 0.1f * lineLength, {2.0f, 2.0f}, color);
+  draw_quad(a + direction * 0.2f * lineLength, {2.0f, 2.0f}, color);
+  draw_quad(a + direction * 0.3f * lineLength, {2.0f, 2.0f}, color);
+  draw_quad(a + direction * 0.4f * lineLength, {2.0f, 2.0f}, color);
+  draw_quad(a + direction * 0.5f * lineLength, {2.0f, 2.0f}, color);
+  draw_quad(a + direction * 0.6f * lineLength, {2.0f, 2.0f}, color);
+  draw_quad(a + direction * 0.7f * lineLength, {2.0f, 2.0f}, color);
+  draw_quad(a + direction * 0.8f * lineLength, {2.0f, 2.0f}, color);
+  draw_quad(a + direction * 0.9f * lineLength, {2.0f, 2.0f}, color);
+  draw_quad(a + direction * 1.0f * lineLength, {2.0f, 2.0f}, color);
+}
+
+void draw_circle(Circle c, Vec4 color)
+{
+  float angle = 0.32f;
+  for(uint32_t i = 0; i < 20; i++)
+  {
+    Vec2 a = Vec2{c.radius * sinf(i * angle), c.radius * cosf(i * angle)};
+    draw_quad(c.pos + a, {2.0f, 2.0f}, color);
+  }
 }
 
 bool renderer_get_vertical_sync()

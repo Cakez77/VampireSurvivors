@@ -13,6 +13,7 @@
 
 // Renderer Layer
 #include <windows.h>
+#include <windowsx.h>
 #include "gl_renderer.cpp"
 
 global_variable char* fileIOBuffer = 0;
@@ -74,6 +75,21 @@ LRESULT CALLBACK window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
     {
       result = DefWindowProcA(hwnd, msg, wParam, lParam);
     }
+    
+    case WM_MOUSEMOVE:
+    {
+      input.oldMousePos = input.mousePosScreen;
+      
+      // Mouse Position
+      input.mousePosScreen.x = (float)GET_X_LPARAM(lParam);
+      input.mousePosScreen.y = (float)GET_Y_LPARAM(lParam);
+      
+      // Relative Movement
+      input.relMouseScreen = input.mousePosScreen - input.oldMousePos;
+      
+      break;
+    }
+    
     
   }
   
@@ -182,7 +198,7 @@ int main()
   
   init_open_gl(window);
   // @Note(tkap, 21/11/2022): To not blow up my pc
-  renderer_set_vertical_sync(true);
+  renderer_set_vertical_sync(false);
   
   init_game();
   

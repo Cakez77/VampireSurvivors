@@ -38,7 +38,7 @@ void main()
   vec2 pos = t.pos * (2.0 / screenSize) - 1.0;
   vec2 size = t.size / screenSize;
 
-  color = materials[gl_InstanceID].color;
+  color = materials[t.materialIdx].color;
 
   // Texture Coords, with flipping
   float left;
