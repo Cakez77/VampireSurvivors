@@ -172,7 +172,11 @@ bool circle_collision(Circle a, Circle b, float* pushout)
   return result;
 }
 
-
+template <typename T>
+T max(T a, T b)
+{
+  return a > b ? a : b;
+}
 
 
 

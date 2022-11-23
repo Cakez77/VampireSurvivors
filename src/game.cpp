@@ -352,7 +352,6 @@ internal void update_game(float dt)
           {
             aw->pos = aw->player.pos;
             data->subTimePassed += subDelay - dt;
-            // aw->dir
           }
           data->subTimePassed += dt;
           while(data->subTimePassed >= subDelay)
@@ -365,6 +364,7 @@ internal void update_game(float dt)
             };
             add_damaging_area(aw->pos + offsets[data->index], {10, 2.5f}, 0.5f); 
             data->index += 1;
+            if(data->index >= 3) { break; }
           }
           
           // float percent_left = 1.0f - aw->timePassed / skill_duration;
@@ -393,7 +393,7 @@ internal void update_game(float dt)
       DamagingArea* da = &gameState.damagingAreas[da_i];
       
       float percent_left = 1.0f - da->timePassed / da->duration;
-      draw_sprite(SPRITE_ENEMY_01, da->pos, da->size * percent_left, COLOR_WHITE);
+      draw_sprite(SPRITE_ENEMY_02, da->pos, da->size * percent_left, COLOR_WHITE);
       
       da->timePassed += dt;
       if(da->timePassed > da->duration)
@@ -403,7 +403,24 @@ internal void update_game(float dt)
         da_i -= 1;
       }
       
-      // @TODO(tkap, 21/11/2022): Loop through enemies and damage them
+      // @TODO(tkap, 21/11/2022): Scuffed pushing thing
+      Circle aoe_collider = {};
+      aoe_collider.pos = da->pos;
+      aoe_collider.radius = max(da->size.x, da->size.y);
+      for(int enemy_i = 0; enemy_i < gameState.enemyCount; enemy_i++)
+      {
+        Entity* enemy = &gameState.enemies[enemy_i];
+        float pushout;
+        Circle temp_enemy_collider = {};
+        temp_enemy_collider.pos = enemy->pos;
+        temp_enemy_collider.radius = enemy->collider.radius;
+        if(circle_collision(temp_enemy_collider, aoe_collider, &pushout))
+        {
+          enemy->pushTime = 1.0f;
+          enemy->pushDirection = enemy->pos - aoe_collider.pos;
+        }
+      }
+      
     }
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		HANDLE DAMAGING AREAS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
