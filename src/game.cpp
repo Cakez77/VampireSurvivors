@@ -1,5 +1,6 @@
 #include "assets.h"
 #include "colors.h"
+#include "easing_functions.h"
 #include "my_math.h"
 #include "render_interface.h"
 
@@ -36,6 +37,10 @@ struct Entity
 {
   SpriteID spriteID = SPRITE_ENEMY_01;
   Vec2 pos;
+  Vec2 desiredDirection;
+  Vec2 seperationForce;
+  float pushTime;
+  Vec2 pushDirection;
   float scale = UNIT_SCALE;
   Vec4 color = COLOR_WHITE;
   
@@ -166,65 +171,73 @@ internal void update_game(float dt)
   {
     Entity* enemy = &gameState.enemies[enemyIdx];
     
+    enemy->pushTime -= dt;
+    if(enemy->pushTime <= 0.0f)
+    {
+      enemy->pushDirection = {};
+    }
+    
     // 50 Pixels per second
-    float movementDistance = 100.0f * dt;
+    float movementDistance = 100.0f;
     
     Vec2 direction = normalize(gameState.player.pos - enemy->pos);
-    enemy->pos += direction * movementDistance;
-  }
-  
-  // Resolve Collisions
-  {
-    int iterationCount = 2;
-    float pushoutFactor = 0.1f / (float)iterationCount;
+    enemy->desiredDirection = direction * movementDistance;
     
-    for(int iterationIdx = 0; iterationIdx < iterationCount; iterationIdx++)
+    // Resolve Collisions
     {
-      for(int enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
+      // Reset seperation Force
+      enemy->seperationForce = {};
+      
+      for(int neighbourIdx = 0; neighbourIdx < gameState.enemyCount; neighbourIdx++)
       {
-        Entity* enemyA = &gameState.enemies[enemyIdx];
-        
-        for(int enemyBIdx = 0; enemyBIdx < gameState.enemyCount; enemyBIdx++)
+        // Skip yourself
+        if(neighbourIdx == enemyIdx)
         {
-          Entity* enemyB = &gameState.enemies[enemyBIdx];
+          continue;
+        }
+        
+        Entity neighbour = gameState.enemies[neighbourIdx];
+        
+        Vec2 neighbourDir = enemy->pos - neighbour.pos;
+        float neighbourDist = length(neighbourDir);
+        
+        // Are the two colliding?
+        float range = neighbour.collider.radius + neighbour.collider.radius;
+        if(neighbourDist < range)
+        {
+          Vec2 seperationDir = {};
           
-          // Skip yourself
-          if(enemyA == enemyB)
+          if(neighbourDist == 0.0f)
           {
-            continue;
-          }
-          
-          Circle colliderA = get_collider(*enemyA);
-          Circle colliderB = get_collider(*enemyB);
-          
-          // Check for Circle Collision and push away both Enemies
-          {
-            float pushout = 0.0f;
-            Vec2 direction = colliderB.pos - colliderA.pos;
-            
-            float distanceSquared = length_squared(direction);
-            if(distanceSquared < 
-               (colliderA.radius + colliderB.radius) * 
-               (colliderA.radius + colliderB.radius))
+            Vec2 randomDirections[] = 
             {
-              pushout = (float)sqrt(distanceSquared) - colliderA.radius - colliderB.radius;
-              
-              Vec2 directionNormalized = normalize(direction);
-              
-              enemyA->pos += direction * pushout * pushoutFactor;
-              enemyB->pos -= direction * pushout * pushoutFactor;
-            }
+              {1.0f, 0.0f}, // To the right
+              {-1.0f, 0.0f}, // To the Left
+            };
+            neighbourDist = EPSILON;
+            seperationDir = randomDirections[neighbourIdx > enemyIdx];
           }
+          else
+          {
+            seperationDir = neighbourDir / neighbourDist;
+          }
+          
+          float seperationStrength = (range - neighbourDist) / range;
+          enemy->seperationForce += seperationDir * seperationStrength;
         }
       }
     }
-  }
-  
-  // Draw Enemies
-  {
-    for(int enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
+    
+    // Move the Enemy
     {
-      Entity* enemy = &gameState.enemies[enemyIdx];
+      float pushForce = ease_in_quad(enemy->pushTime);
+      enemy->pos += (enemy->pushDirection * pushForce * 50.0f + 
+                     enemy->desiredDirection + 
+                     enemy->seperationForce * 1000.0f) * dt;
+    }
+    
+    // Draw
+    {
       Sprite s = get_sprite(enemy->spriteID);
       draw_sprite(enemy->spriteID, enemy->pos, vec_2(enemy->scale), enemy->color);
     }
@@ -252,6 +265,26 @@ internal void update_game(float dt)
       if(is_key_down(KEY_D))
       {
         dir.x += 1;
+      }
+      
+      if(is_key_pressed(KEY_SPACE))
+      {
+        for(int enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
+        {
+          Entity* enemy = &gameState.enemies[enemyIdx];
+          
+          Vec2 enemyDir = enemy->pos - p->pos;
+          float enemyDist = length(enemyDir);
+          
+          if(enemyDist < 200.0f)
+          {
+            Vec2 enemyDirNorm = normalize(enemyDir);
+            float pushFactor = (200.0f - enemyDist) / 200.0f;
+            
+            enemy->pushTime = 1.0f;
+            enemy->pushDirection = enemyDirNorm * pushFactor * 20.0f;
+          }
+        }
       }
       
       if(dir.x != 0)

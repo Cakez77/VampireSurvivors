@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 
+#define EPSILON 0.000001f
+
 #define internal static
 #define global_variable static
 
