@@ -10,8 +10,7 @@ taskkill /IM vsClone.exe /F
 SET includesCL=/Ithird_party
 SET definesCL=/D DEBUG /D GAME
 SET linksCL=/link user32.lib Shell32.lib opengl32.lib gdi32.lib
-cl /nologo /std:c++20 /Zc:strictStrings- src/win32_platform.cpp /Z7 /FevsClone.exe %definesCL% %includesCL% %linksCL%
-
+cl /nologo /std:c++20 /Zc:strictStrings- /FC src/win32_platform.cpp /Z7 /FevsClone.exe %definesCL% %includesCL% %linksCL%
 
 
 @REM Play sound to indicate Building is completed
