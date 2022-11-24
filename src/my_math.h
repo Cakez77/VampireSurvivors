@@ -25,6 +25,12 @@ struct Vec4
   float w;
 };
 
+struct Rect
+{
+  Vec2 pos;
+  Vec2 size;
+};
+
 struct Circle
 {
   Vec2 pos;
@@ -127,6 +133,34 @@ bool operator==(Vec4 a, Vec4 b)
 //#############################################################
 //                  Fucntions
 //#############################################################
+float clamp(float value, float min, float max)
+{
+  if (value > max)
+  {
+    value = max;
+  }
+  else if (value < min)
+  {
+    value = min;
+  }
+  
+  return value;
+}
+
+int clamp(int value, int min, int max)
+{
+  if (value > max)
+  {
+    value = max;
+  }
+  else if (value < min)
+  {
+    value = min;
+  }
+  
+  return value;
+}
+
 Vec2 vec_2(IVec2 v)
 {
   return {(float)v.x, (float)v.y};
@@ -158,6 +192,13 @@ float sinf2(float t)
   return sinf(t) * 0.5f + 0.5f;
 }
 
+bool point_in_circle(Vec2 point, Circle c)
+{
+  Vec2 pointToOrigen = c.pos - point;
+  float lengthSquared = length_squared(pointToOrigen);
+  return lengthSquared <= c.radius * c.radius;
+}
+
 bool circle_collision(Circle a, Circle b, float* pushout)
 {
   bool result = false;
@@ -170,6 +211,25 @@ bool circle_collision(Circle a, Circle b, float* pushout)
   }
   
   return result;
+}
+
+bool rect_circle(Rect rect, Circle c)
+{
+  Vec2 topLeft = rect.pos;
+  Vec2 topRight = rect.pos + Vec2{rect.size.x};
+  Vec2 bottomLeft = rect.pos + Vec2{0.0f, rect.size.y};
+  Vec2 bottomRight = rect.pos + rect.size;
+  
+  Vec2 projectedPos = {};
+  projectedPos.y = clamp(c.pos.y, topLeft.y, bottomRight.y);
+  projectedPos.x = clamp(c.pos.x, topLeft.x, bottomRight.x);
+  
+  if(point_in_circle(projectedPos, c))
+  {
+    return true;
+  }
+  
+  return false;
 }
 
 template <typename T>
