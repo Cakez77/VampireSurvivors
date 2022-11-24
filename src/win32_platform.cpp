@@ -16,9 +16,10 @@
 #include <windowsx.h>
 #include "gl_renderer.cpp"
 
-global_variable char* fileIOBuffer = 0;
-global_variable uint32_t transientBytesUsed = 0;
+// Memory
+global_variable int transientBytesUsed = 0;
 global_variable char* transientBuffer = 0;
+
 global_variable bool running = true;
 global_variable HWND window;
 
@@ -183,9 +184,7 @@ internal void platform_update_window()
 
 int main()
 { 
-  char* gameMemory = (char*)malloc(FILE_IO_BUFFER_SIZE + TRANSIENT_BUFFER_SIZE);
-  fileIOBuffer = gameMemory;
-  transientBuffer = gameMemory + FILE_IO_BUFFER_SIZE;
+  transientBuffer = (char*)malloc(TRANSIENT_BUFFER_SIZE);
   
   // Delta Time Stuff
   global_variable LARGE_INTEGER ticksPerSecond;
@@ -318,64 +317,48 @@ char *platform_read_file(char *path, uint32_t *fileSize)
   
   if (fileSize)
   {
-    if (fileIOBuffer)
+    HANDLE file = CreateFile(path, GENERIC_READ, FILE_SHARE_READ,
+                             0, OPEN_EXISTING, 0, 0);
+    
+    if (file != INVALID_HANDLE_VALUE)
     {
-      HANDLE file = CreateFile(
-                               path,
-                               GENERIC_READ,
-                               FILE_SHARE_READ,
-                               0,
-                               OPEN_EXISTING,
-                               0, 0);
-      
-      if (file != INVALID_HANDLE_VALUE)
+      LARGE_INTEGER fSize;
+      if (GetFileSizeEx(file, &fSize))
       {
-        LARGE_INTEGER fSize;
-        if (GetFileSizeEx(file, &fSize))
+        *fileSize = (uint32_t)fSize.QuadPart;
+        buffer = platform_allocate_transient(*fileSize + 1);
+        
+        if (buffer)
         {
-          *fileSize = (uint32_t)fSize.QuadPart;
-          
-          if (*fileSize < FILE_IO_BUFFER_SIZE)
+          DWORD bytesRead;
+          if (ReadFile(file, buffer, *fileSize, &bytesRead, 0) &&
+              *fileSize == bytesRead)
           {
-            // Use File IO Buffer
-            memset(fileIOBuffer, 0, FILE_IO_BUFFER_SIZE);
-            buffer = fileIOBuffer;
-            
-            DWORD bytesRead;
-            if (ReadFile(file, buffer, *fileSize, &bytesRead, 0) &&
-                *fileSize == bytesRead)
-            {
-            }
-            else
-            {
-              CAKEZ_WARN("Failed reading file %s", path);
-              buffer = 0;
-            }
           }
           else
           {
-            CAKEZ_ASSERT(0, "File size: %d, too large for File IO Buffer: %d", 
-                         *fileSize, FILE_IO_BUFFER_SIZE);
-            CAKEZ_WARN("File size: %d, too large for File IO Buffer: %d", 
-                       *fileSize, FILE_IO_BUFFER_SIZE);
+            CAKEZ_WARN("Failed reading file %s", path);
+            buffer = 0;
           }
         }
         else
-        {
-          CAKEZ_WARN("Failed getting size of file %s", path);
+        {          
+          CAKEZ_ASSERT(0, "Could not allocate: %d bytes, to Load file %s",
+                       *fileSize, path);
+          CAKEZ_WARN("Could not allocate: %d bytes, to Load file %s",
+                     *fileSize, path);
         }
-        
-        CloseHandle(file);
       }
       else
       {
-        CAKEZ_WARN("Failed opening file %s", path);
+        CAKEZ_WARN("Failed getting size of file %s", path);
       }
+      
+      CloseHandle(file);
     }
     else
     {
-      CAKEZ_ASSERT(0, "No File IO Buffer");
-      CAKEZ_WARN("No File IO Buffer");
+      CAKEZ_WARN("Failed opening file %s", path);
     }
   }
   else
@@ -424,6 +407,7 @@ char* platform_allocate_transient(uint32_t sizeInBytes)
   if(transientBytesUsed + sizeInBytes < TRANSIENT_BUFFER_SIZE)
   {
     buffer = transientBuffer + transientBytesUsed;
+    memset(buffer, 0, sizeInBytes);
     transientBytesUsed += sizeInBytes;
   }
   else

@@ -68,7 +68,6 @@ struct Player
   Weapon weapons[WEAPON_COUNT];
 };
 
-constexpr int MAX_ACTIVE_WEAPONS = 128;
 struct ActiveWeapon
 {
   WeaponID id;
@@ -86,7 +85,6 @@ struct ActiveWeapon
   };
 };
 
-constexpr int MAX_DAMAGING_AREAS = 128;
 struct DamagingArea
 {
   float timePassed;

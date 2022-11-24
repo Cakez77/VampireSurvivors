@@ -262,15 +262,12 @@ internal bool init_open_gl(void* window)
   // Create Programs
   {
     uint32_t fileSize = 0;
-    char* tmpHeaderBuffer = platform_read_file("src/shader_header.h", &fileSize);
-    
-    // Scuffed malloc because file reading is done through a "fileIOBuffer" that 
-    // is being overwritten by multiple file reads
-    char* shaderHeader = (char*)malloc(fileSize);
-    CAKEZ_ASSERT(shaderHeader, "Failed to allocate Space for the Shader Header");
-    memcpy(shaderHeader, tmpHeaderBuffer, fileSize);
-    
+    char* shaderHeader = platform_read_file("src/shader_header.h", &fileSize);
     char* vertexShader = platform_read_file("assets/shaders/quad.vert", &fileSize);
+    
+    CAKEZ_ASSERT(shaderHeader, "Failed to allocate Space for Shader Header");
+    CAKEZ_ASSERT(vertexShader, "Failed to allocate Space for Vertex Shader");
+    
     uint32_t vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
     char* vertexSources[] = 
     {
@@ -327,8 +324,6 @@ internal bool init_open_gl(void* window)
         return 0;
       }
     }
-    free(shaderHeader);
-    
     
     uint32_t VAO = 0;
     glGenVertexArrays(1, &VAO);
