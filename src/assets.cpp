@@ -53,6 +53,15 @@ Sprite get_sprite(SpriteID spriteID)
       break;
     }
     
+    case SPRITE_EFFECT_WHIP:
+    {
+      s.atlasOffset = {144, 0};
+      s.size = {240, 32};
+      s.subSize = {240, 32};
+      
+      break;
+    }
+    
     default: 
     {
       CAKEZ_ASSERT(0, "Unrecognized spriteID: %d", spriteID);

@@ -206,14 +206,17 @@ bool circle_collision(Circle a, Circle b, float* pushout)
   float distanceSquared = length_squared(b.pos - a.pos);
   if(distanceSquared < (a.radius + b.radius) * (a.radius + b.radius))
   {
-    *pushout = (float)sqrt(distanceSquared) - a.radius - b.radius;
+    if(pushout)
+    {
+      *pushout = (float)sqrt(distanceSquared) - a.radius - b.radius;
+    }
     result = true;
   }
   
   return result;
 }
 
-bool rect_circle(Rect rect, Circle c)
+bool rect_circle_collision(Rect rect, Circle c)
 {
   Vec2 topLeft = rect.pos;
   Vec2 topRight = rect.pos + Vec2{rect.size.x};
@@ -236,6 +239,12 @@ template <typename T>
 T max(T a, T b)
 {
   return a > b ? a : b;
+}
+
+template <typename T>
+T min(T a, T b)
+{
+  return a < b ? a : b;
 }
 
 

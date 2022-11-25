@@ -4,37 +4,15 @@
 #include "my_math.h"
 #include "render_interface.h"
 
-// @Note(tkap, 21/11/2022): IDK where to put this
-#define invalid_default_case default: { CAKEZ_ASSERT(false, ""); }
-
-
-enum WeaponID
-{
-  WEAPON_WHIP,
-  WEAPON_COUNT,
-};
-
 // Needed for Fucking rand() function, CRINGE
 #include <cstdLib>
 
-struct SpawnBreakPoint
-{
-  float time;
-  int spawnAmount;
-};
-
-SpawnBreakPoint spawnBreakPoints[] =
-{
-  {0.0f, 10}, // Between 0 and 1 Seconds, spawn 10
-  {1.0f, 10}, // Between 1 and 5 Seconds, spawn 10
-  {5.0f, 10},
-  {10.0f, 20},
-  {12.0f, 0},
-};
-
-
+//#############################################################
+//                  Internal Structures
+//#############################################################
 struct Entity
 {
+  int ID;
   SpriteID spriteID = SPRITE_ENEMY_01;
   Vec2 pos;
   Vec2 desiredDirection;
@@ -46,56 +24,72 @@ struct Entity
   
   Circle collider  = {{0.0f, 0.0f}, 20.0f};
   
-  int hp;
-  int attack;
+  int hp = 100;
+  int attack = 10;
+  float attackTime;
+};
+
+enum WeaponID
+{
+  WEAPON_WHIP,
+  WEAPON_COUNT,
 };
 
 struct Weapon
 {
+  WeaponID ID;
+  int level;
   float timePassed;
 };
 
-struct Player
+struct ActiveAttack
 {
-  bool flipX;
-  SpriteID spriteID = SPRITE_HERO_KARATE_MAN;
-  Vec2 pos;
-  float speed = 400.0f;
-  
-  Circle collider ={{0.0f, 0.0f}, 12.0f};
-  
-  bool unlockedWeapons[WEAPON_COUNT];
-  Weapon weapons[WEAPON_COUNT];
-};
-
-struct ActiveWeapon
-{
-  WeaponID id;
+  WeaponID ID;
   float timePassed;
+  
   Vec2 pos;
-  Player player;
   
   union
   {
     struct
     {
-      int index;
-      float subTimePassed;
+      int maxSlashCount;
+      int currentSlashCount;
     } whip;
   };
 };
 
+struct Player
+{
+  SpriteID spriteID = SPRITE_HERO_KARATE_MAN;
+  Vec2 pos;
+  Circle collider ={{0.0f, 0.0f}, 12.0f};
+  float speed = 400.0f;
+  bool flipX;
+  
+  int hp = 300;
+  
+  int weaponCount;
+  Weapon weapons[WEAPON_COUNT];
+};
+
 struct DamagingArea
 {
+  SpriteID spriteID;
   float timePassed;
   float duration;
   Vec2 pos;
   Vec2 size;
+  
+  int hitEnemiesCount;
+  int hitEnemyIDS[MAX_ENEMIES];
 };
 
 struct GameState
 {
+  int entityIDCounter = 1;
   float totalTime;
+  float spawnTimer;
   
   int currentSpawnBreakPoint;
   float spawnsPerSecond;
@@ -104,8 +98,8 @@ struct GameState
   uint32_t enemyCount;
   Entity enemies[MAX_ENEMIES];
   
-  int activeWeaponsCount;  
-  ActiveWeapon activeWeapons[MAX_ACTIVE_WEAPONS];
+  int activeAttacksCount;  
+  ActiveAttack activeAttacks[MAX_ACTIVE_WEAPONS];
   
   int damagingAreasCount;  
   DamagingArea damagingAreas[MAX_DAMAGING_AREAS];
@@ -114,18 +108,29 @@ struct GameState
   float playerScreenEdgeDist;
 };
 
+
+//#############################################################
+//                  Global Variables
+//#############################################################
 global_variable GameState gameState = {};
 
-internal SpawnBreakPoint* get_next_spawn_break_point()
+
+//#############################################################
+//                  Internal Functions
+//#############################################################
+internal void player_add_weapon(WeaponID ID, int level = 0)
 {
-  SpawnBreakPoint* next = 0;
+  Weapon w = {};
+  w.ID = ID;
+  w.level = level;
   
-  if(gameState.currentSpawnBreakPoint + 1 < ArraySize(spawnBreakPoints))
-  {
-    next = &spawnBreakPoints[gameState.currentSpawnBreakPoint + 1];
-  }
-  
-  return next;
+  // TODO: We can't add inifite atcive weapons, some HAVE to be passive effects
+  gameState.player.weapons[gameState.player.weaponCount++] = w;
+}
+
+internal Circle get_collider(Player p)
+{
+  return {p.pos + p.collider.pos, p.collider.radius};
 }
 
 internal Circle get_collider(Entity e)
@@ -133,41 +138,102 @@ internal Circle get_collider(Entity e)
   return {e.pos + e.collider.pos, e.collider.radius};
 }
 
-internal void add_damaging_area(Vec2 pos, Vec2 size, float duration);
+internal bool has_hit_enemy(DamagingArea da, int enemyID)
+{
+  bool hit = false;
+  for(int hitIdx = 0; hitIdx < da.hitEnemiesCount; hitIdx++)
+  {
+    if(da.hitEnemyIDS[hitIdx] == enemyID)
+    {
+      hit = true;
+      break;
+    }
+  }
+  
+  return hit;
+}
+
+internal void add_damaging_area(SpriteID spriteID, Vec2 pos, Vec2 size, float duration)
+{
+  DamagingArea da = {};
+  da.spriteID = spriteID;
+  da.pos = pos;
+  da.size = size;
+  da.duration = duration;
+  
+  // @TODO(tkap, 21/11/2022): Bounds check. C arrays are cringe, where the templates at?
+  gameState.damagingAreas[gameState.damagingAreasCount++] = da;
+}
 
 internal void init_game()
 {
-  gameState.player.unlockedWeapons[WEAPON_WHIP] = true;
+  gameState = {};
+  
+  player_add_weapon(WEAPON_WHIP);
   
   gameState.player.pos.x = input.screenSize.x / 2;
   gameState.player.pos.y = input.screenSize.y / 2;
   gameState.playerScreenEdgeDist = length(vec_2(WORLD_SIZE - WORLD_SIZE / 2)) + 50.0f;
 }
 
-
 internal void update_game(float dt)
 {
   gameState.totalTime += dt;
+  gameState.spawnTimer += dt;
   
   // Spawning System
   {
-    if(((int)(gameState.totalTime * 10.0f) % 50) == 0)
+    float spawnRate = 0.08f;
+    while(gameState.spawnTimer > spawnRate)
     {
-      // In Radians
-      float randomAngle = (float)(rand() % 360) * 3.14f / 180.0f;
-      
-      Vec2 playerPos = gameState.player.pos;
-      Vec2 spawnDirection = {cosf(randomAngle), sinf(randomAngle)};
-      Vec2 spawnPos = playerPos + spawnDirection * gameState.playerScreenEdgeDist;
-      
-      Entity enemy = {.pos = spawnPos};
-      gameState.enemies[gameState.enemyCount++] = enemy;
+      if(gameState.enemyCount < MAX_ENEMIES)
+      {
+        // In Radians
+        float randomAngle = (float)(rand() % 360) * 3.14f / 180.0f;
+        
+        Vec2 playerPos = gameState.player.pos;
+        Vec2 spawnDirection = {cosf(randomAngle), sinf(randomAngle)};
+        Vec2 spawnPos = playerPos + spawnDirection * gameState.playerScreenEdgeDist;
+        
+        Entity enemy = {.ID = gameState.entityIDCounter++, .pos = spawnPos};
+        enemy.hp += gameState.totalTime;
+        gameState.enemies[gameState.enemyCount++] = enemy;
+        
+        gameState.spawnTimer -= spawnRate;
+      }
+      else
+      {
+        CAKEZ_ASSERT(0, "Reached maximum amount of Enemies");
+      }
     }
   }
   
   for(int enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
   {
     Entity* enemy = &gameState.enemies[enemyIdx];
+    
+    float attackDelay = 0.5f;
+    enemy->attackTime = min(enemy->attackTime + dt, attackDelay);
+    
+    // Check if colliding with player
+    {
+      Circle collider = get_collider(*enemy);
+      Circle playerCollider = get_collider(gameState.player);
+      if(circle_collision(collider, playerCollider, 0))
+      {
+        if(enemy->attackTime >= attackDelay)
+        {
+          gameState.player.hp -= enemy->attack;
+          enemy->attackTime = 0.0f;
+          
+          if(gameState.player.hp <= 0)
+          {
+            init_game();
+            return;
+          }
+        }
+      }
+    }
     
     enemy->pushTime -= dt;
     if(enemy->pushTime <= 0.0f)
@@ -302,21 +368,35 @@ internal void update_game(float dt)
     
     // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		PLAYER SKILLS START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     {
-      for(int weapon_i = 0; weapon_i < WEAPON_COUNT; weapon_i++)
+      for(int weaponIdx = 0; weaponIdx < gameState.player.weaponCount; weaponIdx++)
       {
-        if(!p->unlockedWeapons[weapon_i]) { continue; }
-        
-        Weapon* w = &p->weapons[weapon_i];
+        Weapon* w = &p->weapons[weaponIdx];
         w->timePassed += dt;
-        constexpr float skillCooldown = 1;
+        
+        ActiveAttack aa = {};
+        float skillCooldown = 0.0f;
+        
+        switch(w->ID)
+        {
+          case WEAPON_WHIP:
+          {
+            skillCooldown = 1.0f;
+            
+            // Fill in data for Active Attack
+            aa.ID = w->ID;
+            aa.pos = gameState.player.pos; // TODO: Needed???
+            aa.whip.maxSlashCount = w->level < 2? 3: w->level < 5? 4: 5;
+            
+            break;
+          }
+        }
+        
         while(w->timePassed > skillCooldown)
         {
           w->timePassed -= skillCooldown;
           
-          ActiveWeapon aw = {};
-          aw.player = *p;
-          aw.id = (WeaponID)weapon_i;
-          gameState.activeWeapons[gameState.activeWeaponsCount++] = aw;
+          // Add active weapon
+          gameState.activeAttacks[gameState.activeAttacksCount++] = aa;
         }
       }
     }
@@ -330,92 +410,113 @@ internal void update_game(float dt)
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE PLAYER END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
-  // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		ACTIVE WEAPONS START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
+  // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		ACTIVE ATTACKS START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
   {
-    for(int aw_i = 0; aw_i < gameState.activeWeaponsCount; aw_i++)
+    for(int aaIdx = 0; aaIdx < gameState.activeAttacksCount; aaIdx++)
     {
-      ActiveWeapon* aw = &gameState.activeWeapons[aw_i];
-      bool remove = false;
-      bool first_frame = aw->timePassed <= 0;
+      ActiveAttack* aa = &gameState.activeAttacks[aaIdx];
+      float skillDuration = 0.0f;
       
-      constexpr float skill_duration = 0.25f;
-      
-      switch(aw->id)
+      switch(aa->ID)
       {
         case WEAPON_WHIP:
         {
-          auto data = &aw->whip;
-          constexpr float subDelay = skill_duration / 3.0f;
-          if(first_frame)
+          auto whip = &aa->whip;
+          skillDuration = 0.25f;
+          float delay = skillDuration / whip->maxSlashCount;
+          
+          constexpr Vec2 offsets[] = {
+            {-150.0f,  -50.0f},
+            { 150.0f,    0.0f},
+            {-150.0f,   50.0f},
+            {   0.0f,  100.0f},
+            {   0.0f,   50.0f},
+          };
+          
+          while(aa->timePassed >= whip->currentSlashCount * delay)
           {
-            aw->pos = aw->player.pos;
-            data->subTimePassed += subDelay - dt;
-          }
-          data->subTimePassed += dt;
-          while(data->subTimePassed >= subDelay)
-          {
-            data->subTimePassed -= subDelay;
-            constexpr Vec2 offsets[] = {
-              {150, 0},
-              {-150, -50},
-              {0, -150},
-            };
-            add_damaging_area(aw->pos + offsets[data->index], {10, 2.5f}, 0.5f); 
-            data->index += 1;
-            if(data->index >= 3) { break; }
+            // Spawn Whip
+            add_damaging_area(SPRITE_EFFECT_WHIP, 
+                              aa->pos + offsets[whip->currentSlashCount++], vec_2(2.0f), 0.25f); 
           }
           
-          // float percent_left = 1.0f - aw->timePassed / skill_duration;
-        } break;
+          break;
+        } 
         
         invalid_default_case;
       }
       
-      aw->timePassed += dt;
-      if(aw->timePassed >= skill_duration) { remove = true; }
-      if(remove)
-      {
-        gameState.activeWeaponsCount -= 1;
-        gameState.activeWeapons[aw_i] = gameState.activeWeapons[gameState.activeWeaponsCount];
-        aw_i -= 1;
+      aa->timePassed += dt;
+      
+      // Active Attack ran out
+      if(aa->timePassed >= skillDuration) 
+      { 
+        *aa = gameState.activeAttacks[--gameState.activeAttacksCount];
+        aaIdx--;
       }
     }
   }
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		ACTIVE WEAPONS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		ACTIVE ATTACKS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
   
   // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		HANDLE DAMAGING AREAS START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
   {
-    for(int da_i = 0; da_i < gameState.damagingAreasCount; da_i++)
+    for(int daIdx = 0; daIdx < gameState.damagingAreasCount; daIdx++)
     {
-      DamagingArea* da = &gameState.damagingAreas[da_i];
+      DamagingArea* da = &gameState.damagingAreas[daIdx];
       
-      float percent_left = 1.0f - da->timePassed / da->duration;
-      draw_sprite(SPRITE_ENEMY_02, da->pos, da->size * percent_left, COLOR_WHITE);
+      float percentDone = da->timePassed / da->duration;
+      Vec2 scale = da->size * percentDone;
+      
+      draw_sprite(da->spriteID, da->pos, scale, COLOR_WHITE);
       
       da->timePassed += dt;
       if(da->timePassed > da->duration)
       {
-        gameState.damagingAreasCount -= 1;
-        gameState.damagingAreas[da_i] = gameState.damagingAreas[gameState.damagingAreasCount];
-        da_i -= 1;
+        *da = gameState.damagingAreas[--gameState.damagingAreasCount];
+        daIdx--;
+        continue;
       }
       
+      Vec2 spriteSize = vec_2(get_sprite(da->spriteID).subSize);
+      Vec2 size = scale * spriteSize;
+      
       // @TODO(tkap, 21/11/2022): Scuffed pushing thing
-      Circle aoe_collider = {};
-      aoe_collider.pos = da->pos;
-      aoe_collider.radius = max(da->size.x, da->size.y);
-      for(int enemy_i = 0; enemy_i < gameState.enemyCount; enemy_i++)
+      Rect daCollider = {da->pos, size};
+      
+      // TODO: Only the first one is blue!
+      //draw_quad(daCollider.pos, daCollider.size, COLOR_BLUE);
+      
+      for(int enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
       {
-        Entity* enemy = &gameState.enemies[enemy_i];
+        Entity* enemy = &gameState.enemies[enemyIdx];
+        Circle enemyCollider = get_collider(*enemy);
+        
         float pushout;
-        Circle temp_enemy_collider = {};
-        temp_enemy_collider.pos = enemy->pos;
-        temp_enemy_collider.radius = enemy->collider.radius;
-        if(circle_collision(temp_enemy_collider, aoe_collider, &pushout))
+        
+        if(has_hit_enemy(*da, enemy->ID))
         {
+          continue;
+        }
+        
+        if(rect_circle_collision(daCollider, enemyCollider))
+        {
+          // Damage 
+          enemy->hp -= 200;
+          if(enemy->hp <= 0)
+          {
+            *enemy = gameState.enemies[--gameState.enemyCount];
+            enemyIdx--;
+            continue;
+          }
+          
+          // Push away
           enemy->pushTime = 1.0f;
-          enemy->pushDirection = enemy->pos - aoe_collider.pos;
+          Vec2 pushDir = normalize(enemy->pos - da->pos);
+          enemy->pushDirection = pushDir * 10.0f;
+          
+          // Add to hit targets
+          da->hitEnemyIDS[da->hitEnemiesCount++] = enemy->ID;
         }
       }
       
@@ -423,15 +524,4 @@ internal void update_game(float dt)
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		HANDLE DAMAGING AREAS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
-}
-
-internal void add_damaging_area(Vec2 pos, Vec2 size, float duration)
-{
-  DamagingArea da = {};
-  da.pos = pos;
-  da.size = size;
-  da.duration = duration;
-  
-  // @TODO(tkap, 21/11/2022): Bounds check. C arrays are cringe, where the templates at?
-  gameState.damagingAreas[gameState.damagingAreasCount++] = da;
 }

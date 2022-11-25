@@ -197,13 +197,12 @@ int main()
   
   init_open_gl(window);
   // @Note(tkap, 21/11/2022): To not blow up my pc
-  renderer_set_vertical_sync(false);
-  
-  init_game();
+  renderer_set_vertical_sync(true);
   
   // Seed for random numbers
   srand((uint32_t)__rdtsc());
   
+  init_game();
   
   while(running)
   {
