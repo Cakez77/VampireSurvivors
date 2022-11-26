@@ -67,6 +67,7 @@ struct Player
   float speed = 400.0f;
   bool flipX;
   
+  int maxHP = 300;
   int hp = 300;
   
   int weaponCount;
@@ -303,7 +304,7 @@ internal void update_game(float dt)
     // Draw
     {
       Sprite s = get_sprite(enemy->spriteID);
-      draw_sprite(enemy->spriteID, enemy->pos, vec_2(enemy->scale), enemy->color);
+      draw_sprite(enemy->spriteID, enemy->pos, vec_2(s.subSize) * enemy->scale, {.color = enemy->color});
     }
   }
   
@@ -402,10 +403,22 @@ internal void update_game(float dt)
     }
     // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		PLAYER SKILLS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     
-    // Draw Hero
+    // Draw Player
     {
-      draw_sprite(p->spriteID, p->pos, vec_2(UNIT_SCALE + sinf2(gameState.totalTime * 10) * 0.125f),
-                  COLOR_WHITE, p->flipX ? RENDER_OPTION_FLIP_X : 0);
+      float playerScale = UNIT_SCALE + sinf2(gameState.totalTime * 10.0) * 0.125f;
+      Sprite s = get_sprite(p->spriteID);
+      draw_sprite(p->spriteID, p->pos, vec_2(s.subSize) * playerScale,
+                  {.renderOptions = p->flipX ? RENDER_OPTION_FLIP_X : 0});
+      // Hp Bar
+      {
+        // Background
+        draw_quad(p->pos + Vec2{0.0f, 50.0f}, {69.0f, 10.0f}, {.color = COLOR_BLACK});
+        
+        // Actual HP
+        float hpPercent = (float)p->hp / (float)p->maxHP;
+        draw_quad(p->pos + Vec2{-(1.0f - hpPercent) * 69.0f / 2.0f, 50.0f}, 
+                  {69.0f * hpPercent, 10.0f}, {.color = COLOR_RED});
+      }
     }
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE PLAYER END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -436,8 +449,10 @@ internal void update_game(float dt)
           while(aa->timePassed >= whip->currentSlashCount * delay)
           {
             // Spawn Whip
+            Sprite s = get_sprite(SPRITE_EFFECT_WHIP);
             add_damaging_area(SPRITE_EFFECT_WHIP, 
-                              aa->pos + offsets[whip->currentSlashCount++], vec_2(2.0f), 0.25f); 
+                              aa->pos + offsets[whip->currentSlashCount++], 
+                              vec_2(s.subSize) * 2.0f, 0.25f); 
           }
           
           break;
@@ -466,9 +481,11 @@ internal void update_game(float dt)
       DamagingArea* da = &gameState.damagingAreas[daIdx];
       
       float percentDone = da->timePassed / da->duration;
-      Vec2 scale = da->size * percentDone;
+      Vec2 size = da->size * percentDone;
       
-      draw_sprite(da->spriteID, da->pos, scale, COLOR_WHITE);
+      
+      draw_sprite(da->spriteID, da->pos, size, 
+                  {.renderOptions = da->pos.x < gameState.player.pos.x? RENDER_OPTION_FLIP_X: 0});
       
       da->timePassed += dt;
       if(da->timePassed > da->duration)
@@ -478,11 +495,7 @@ internal void update_game(float dt)
         continue;
       }
       
-      Vec2 spriteSize = vec_2(get_sprite(da->spriteID).subSize);
-      Vec2 size = scale * spriteSize;
-      
-      // @TODO(tkap, 21/11/2022): Scuffed pushing thing
-      Rect daCollider = {da->pos, size};
+      Rect daCollider = {da->pos - size / 2.0, size};
       
       // TODO: Only the first one is blue!
       //draw_quad(daCollider.pos, daCollider.size, COLOR_BLUE);
@@ -523,5 +536,4 @@ internal void update_game(float dt)
     }
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		HANDLE DAMAGING AREAS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  
 }

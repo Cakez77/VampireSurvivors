@@ -422,6 +422,7 @@ internal int get_material_idx(Vec4 color)
     
     if(glContext.materialCount < MAX_MATERIALS)
     {
+      idx = glContext.materialCount;
       glContext.materials[glContext.materialCount++] = m;
     }
     else
@@ -521,17 +522,21 @@ void draw_transform(DrawData drawData)
   add_transform(t);
 }
 
-void draw_quad(Vec2 pos, Vec2 size, Vec4 color, RenderOptions renderOptions)
+void draw_quad(Vec2 pos, Vec2 size, DrawData drawData)
 {
-  draw_transform({.pos = pos, .size = size, .color = color, .renderOptions = renderOptions});
+  drawData.pos = pos;
+  drawData.size = size;
+  
+  draw_transform(drawData);
 }
 
-void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 scale, Vec4 color, RenderOptions renderOptions)
+void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 size, DrawData drawData)
 {
-  Sprite s = get_sprite(spriteID);
-  Vec2 subSize = vec_2(s.subSize.x, s.subSize.y);
-  draw_transform({ .spriteID = spriteID, .pos = pos, .size = subSize * scale, 
-                   .color = color, .renderOptions = renderOptions});
+  drawData.spriteID = spriteID;
+  drawData.pos = pos;
+  drawData.size = size;
+  
+  draw_transform(drawData);
 }
 
 void draw_line(Vec2 a, Vec2 b, Vec4 color)
@@ -540,17 +545,17 @@ void draw_line(Vec2 a, Vec2 b, Vec4 color)
   float lineLength = length(b - a);
   Vec2 direction = normalize(b - a);
   
-  draw_quad(a + direction * 0.0f * lineLength, {2.0f, 2.0f}, color);
-  draw_quad(a + direction * 0.1f * lineLength, {2.0f, 2.0f}, color);
-  draw_quad(a + direction * 0.2f * lineLength, {2.0f, 2.0f}, color);
-  draw_quad(a + direction * 0.3f * lineLength, {2.0f, 2.0f}, color);
-  draw_quad(a + direction * 0.4f * lineLength, {2.0f, 2.0f}, color);
-  draw_quad(a + direction * 0.5f * lineLength, {2.0f, 2.0f}, color);
-  draw_quad(a + direction * 0.6f * lineLength, {2.0f, 2.0f}, color);
-  draw_quad(a + direction * 0.7f * lineLength, {2.0f, 2.0f}, color);
-  draw_quad(a + direction * 0.8f * lineLength, {2.0f, 2.0f}, color);
-  draw_quad(a + direction * 0.9f * lineLength, {2.0f, 2.0f}, color);
-  draw_quad(a + direction * 1.0f * lineLength, {2.0f, 2.0f}, color);
+  draw_quad(a + direction * 0.0f * lineLength, {2.0f, 2.0f}, {.color = color});
+  draw_quad(a + direction * 0.1f * lineLength, {2.0f, 2.0f}, {.color = color});
+  draw_quad(a + direction * 0.2f * lineLength, {2.0f, 2.0f}, {.color = color});
+  draw_quad(a + direction * 0.3f * lineLength, {2.0f, 2.0f}, {.color = color});
+  draw_quad(a + direction * 0.4f * lineLength, {2.0f, 2.0f}, {.color = color});
+  draw_quad(a + direction * 0.5f * lineLength, {2.0f, 2.0f}, {.color = color});
+  draw_quad(a + direction * 0.6f * lineLength, {2.0f, 2.0f}, {.color = color});
+  draw_quad(a + direction * 0.7f * lineLength, {2.0f, 2.0f}, {.color = color});
+  draw_quad(a + direction * 0.8f * lineLength, {2.0f, 2.0f}, {.color = color});
+  draw_quad(a + direction * 0.9f * lineLength, {2.0f, 2.0f}, {.color = color});
+  draw_quad(a + direction * 1.0f * lineLength, {2.0f, 2.0f}, {.color = color});
 }
 
 void draw_circle(Circle c, Vec4 color)
@@ -559,8 +564,27 @@ void draw_circle(Circle c, Vec4 color)
   for(uint32_t i = 0; i < 20; i++)
   {
     Vec2 a = Vec2{c.radius * sinf(i * angle), c.radius * cosf(i * angle)};
-    draw_quad(c.pos + a, {2.0f, 2.0f}, color);
+    draw_quad(c.pos + a, {2.0f, 2.0f}, {.color = color});
   }
+}
+
+void draw_box(Vec2 pos, Vec2 size, Vec4 color, float lineThickness)
+{
+  // Top Side
+  draw_quad(pos - Vec2{0.0f, (size.y - lineThickness) / 2.0f}, 
+            {size.x, lineThickness}, {.color = color});
+  
+  // Left Side
+  draw_quad(pos - Vec2{(size.x - lineThickness) / 2.0f}, 
+            {lineThickness, size.y}, {.color = color});
+  
+  // Right Side
+  draw_quad(pos + Vec2{(size.x - lineThickness) / 2.0f}, 
+            {lineThickness, size.y}, {.color = color});
+  
+  // Bottom Side
+  draw_quad(pos + Vec2{0.0f, (size.y - lineThickness) / 2.0f},
+            {size.x, lineThickness}, {.color = color});
 }
 
 bool renderer_get_vertical_sync()

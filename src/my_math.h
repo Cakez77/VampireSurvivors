@@ -131,7 +131,7 @@ bool operator==(Vec4 a, Vec4 b)
 }
 
 //#############################################################
-//                  Fucntions
+//                  Functions
 //#############################################################
 float clamp(float value, float min, float max)
 {

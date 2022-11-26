@@ -11,8 +11,9 @@ struct DrawData
   SpriteID spriteID = SPRITE_WHITE;
   Vec2 pos;
   Vec2 size;
+  Vec2 vertexOffset = ORIGIN_CENTER;
   
-  Vec4 color;
+  Vec4 color = COLOR_WHITE;
   RenderOptions renderOptions;
 };
 
@@ -20,11 +21,12 @@ struct DrawData
 //                  Draw Functions
 //#############################################################
 void draw_transform(DrawData drawData);
-void draw_quad(Vec2 pos, Vec2 size, Vec4 color = COLOR_WHITE, RenderOptions renderOptions = 0);
-void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 scale, Vec4 color, RenderOptions renderOptions = 0);
+void draw_quad(Vec2 pos, Vec2 size, DrawData drawData = {});
+void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 size, DrawData drawData = {});
 
 void draw_line(Vec2 a, Vec2 b, Vec4 color = COLOR_WHITE);
 void draw_circle(Circle c, Vec4 color = COLOR_WHITE);
+void draw_box(Vec2 pos, Vec2 size, Vec4 color = COLOR_WHITE, float lineThickness = 5.0f);
 
 //#############################################################
 //                  Utility Functions
