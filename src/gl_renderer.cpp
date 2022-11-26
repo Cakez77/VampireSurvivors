@@ -23,11 +23,8 @@ struct GLContext
   uint32_t transformSBOID;
   Texture textureAtlas01;
   
-  uint32_t materialCount;
-  Material materials[MAX_MATERIALS];
-  
-  uint32_t transformCount;
-  Transform transforms[MAX_TRANSFORMS];
+  Array<Material, MAX_MATERIALS> materials;
+  Array<Transform, MAX_TRANSFORMS> transforms;
 };
 
 
@@ -391,14 +388,7 @@ internal bool init_open_gl(void* window)
 
 internal void add_transform(Transform t = {})
 {
-  if(glContext.transformCount < MAX_TRANSFORMS)
-  {
-    glContext.transforms[glContext.transformCount++] = t;
-  }
-  else
-  {
-    CAKEZ_ASSERT(0, "Reached maximum amount of transforms");
-  }
+  glContext.transforms.add(t);
 }
 
 internal int get_material_idx(Vec4 color)
@@ -406,7 +396,7 @@ internal int get_material_idx(Vec4 color)
   int idx = 0;
   bool foundMaterial = false;
   
-  for(int materialIdx = 0; materialIdx < glContext.materialCount; materialIdx++)
+  for(int materialIdx = 0; materialIdx < glContext.materials.count; materialIdx++)
   {
     if(glContext.materials[materialIdx].color == color)
     {
@@ -420,15 +410,7 @@ internal int get_material_idx(Vec4 color)
   {
     Material m = {color};
     
-    if(glContext.materialCount < MAX_MATERIALS)
-    {
-      idx = glContext.materialCount;
-      glContext.materials[glContext.materialCount++] = m;
-    }
-    else
-    {
-      CAKEZ_ASSERT(0, "Reached maximum amount of materials");
-    }
+    idx = glContext.materials.add(m);
   }
   
   return idx;
@@ -469,33 +451,29 @@ internal bool gl_render()
     hot_reload_textures();
 #endif
     
-    glContext.materials[glContext.materialCount++] = {1.0f, 0.0f, 0.0f, 1.0f};
-    glContext.materials[glContext.materialCount++] = {0.0f, 0.0f, 1.0f, 1.0f};
-    
     // Copy Materials to GPU
     {
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.materialSBOID);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Material) * glContext.materialCount,
-                   glContext.materials, GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Material) * glContext.materials.count,
+                   glContext.materials.elements, GL_STATIC_DRAW);
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
       
-      glContext.materialCount = 0;
+      glContext.materials.count = 0;
     }
     
     // Copy Transforms to GPU
     {
       // Use the Buffer, (active)
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.transformSBOID);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Transform) * glContext.transformCount,
-                   glContext.transforms, GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Transform) * glContext.transforms.count,
+                   glContext.transforms.elements, GL_STATIC_DRAW);
       
       //Undinds the buffer after usage (inactive)
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
       
-      glDrawArraysInstanced(GL_TRIANGLES, 0, 6, glContext.transformCount);
-      glContext.transformCount = 0;
+      glDrawArraysInstanced(GL_TRIANGLES, 0, 6, glContext.transforms.count);
+      glContext.transforms.count = 0;
     }
-    
     
     SwapBuffers(glContext.dc);
   }

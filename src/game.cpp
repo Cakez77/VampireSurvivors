@@ -70,8 +70,7 @@ struct Player
   int maxHP = 300;
   int hp = 300;
   
-  int weaponCount;
-  Weapon weapons[WEAPON_COUNT];
+  Array<Weapon, WEAPON_COUNT> weapons;
 };
 
 struct DamagingArea
@@ -82,8 +81,7 @@ struct DamagingArea
   Vec2 pos;
   Vec2 size;
   
-  int hitEnemiesCount;
-  int hitEnemyIDS[MAX_ENEMIES];
+  Array<int, MAX_ENEMIES> hitEnemyIDs;
 };
 
 struct GameState
@@ -96,14 +94,9 @@ struct GameState
   float spawnsPerSecond;
   int spawnCounter;
   
-  uint32_t enemyCount;
-  Entity enemies[MAX_ENEMIES];
-  
-  int activeAttacksCount;  
-  ActiveAttack activeAttacks[MAX_ACTIVE_WEAPONS];
-  
-  int damagingAreasCount;  
-  DamagingArea damagingAreas[MAX_DAMAGING_AREAS];
+  Array<Entity, MAX_ENEMIES> enemies;
+  Array<ActiveAttack, MAX_ACTIVE_ATTACKS> activeAttacks;
+  Array<DamagingArea, MAX_DAMAGING_AREAS> damagingAreas;
   
   Player player;
   float playerScreenEdgeDist;
@@ -126,7 +119,7 @@ internal void player_add_weapon(WeaponID ID, int level = 0)
   w.level = level;
   
   // TODO: We can't add inifite atcive weapons, some HAVE to be passive effects
-  gameState.player.weapons[gameState.player.weaponCount++] = w;
+  gameState.player.weapons.add(w);
 }
 
 internal Circle get_collider(Player p)
@@ -142,9 +135,9 @@ internal Circle get_collider(Entity e)
 internal bool has_hit_enemy(DamagingArea da, int enemyID)
 {
   bool hit = false;
-  for(int hitIdx = 0; hitIdx < da.hitEnemiesCount; hitIdx++)
+  for(int hitIdx = 0; hitIdx < da.hitEnemyIDs.count; hitIdx++)
   {
-    if(da.hitEnemyIDS[hitIdx] == enemyID)
+    if(da.hitEnemyIDs[hitIdx] == enemyID)
     {
       hit = true;
       break;
@@ -162,8 +155,7 @@ internal void add_damaging_area(SpriteID spriteID, Vec2 pos, Vec2 size, float du
   da.size = size;
   da.duration = duration;
   
-  // @TODO(tkap, 21/11/2022): Bounds check. C arrays are cringe, where the templates at?
-  gameState.damagingAreas[gameState.damagingAreasCount++] = da;
+  gameState.damagingAreas.add(da);
 }
 
 internal void init_game()
@@ -187,7 +179,7 @@ internal void update_game(float dt)
     float spawnRate = 0.08f;
     while(gameState.spawnTimer > spawnRate)
     {
-      if(gameState.enemyCount < MAX_ENEMIES)
+      if(gameState.enemies.count < MAX_ENEMIES)
       {
         // In Radians
         float randomAngle = (float)(rand() % 360) * 3.14f / 180.0f;
@@ -198,7 +190,7 @@ internal void update_game(float dt)
         
         Entity enemy = {.ID = gameState.entityIDCounter++, .pos = spawnPos};
         enemy.hp += gameState.totalTime;
-        gameState.enemies[gameState.enemyCount++] = enemy;
+        gameState.enemies.add(enemy);
         
         gameState.spawnTimer -= spawnRate;
       }
@@ -209,7 +201,7 @@ internal void update_game(float dt)
     }
   }
   
-  for(int enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
+  for(int enemyIdx = 0; enemyIdx < gameState.enemies.count; enemyIdx++)
   {
     Entity* enemy = &gameState.enemies[enemyIdx];
     
@@ -253,7 +245,7 @@ internal void update_game(float dt)
       // Reset seperation Force
       enemy->seperationForce = {};
       
-      for(int neighbourIdx = 0; neighbourIdx < gameState.enemyCount; neighbourIdx++)
+      for(int neighbourIdx = 0; neighbourIdx < gameState.enemies.count; neighbourIdx++)
       {
         // Skip yourself
         if(neighbourIdx == enemyIdx)
@@ -334,7 +326,7 @@ internal void update_game(float dt)
       
       if(is_key_pressed(KEY_SPACE))
       {
-        for(int enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
+        for(int enemyIdx = 0; enemyIdx < gameState.enemies.count; enemyIdx++)
         {
           Entity* enemy = &gameState.enemies[enemyIdx];
           
@@ -369,7 +361,7 @@ internal void update_game(float dt)
     
     // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		PLAYER SKILLS START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     {
-      for(int weaponIdx = 0; weaponIdx < gameState.player.weaponCount; weaponIdx++)
+      for(int weaponIdx = 0; weaponIdx < gameState.player.weapons.count; weaponIdx++)
       {
         Weapon* w = &p->weapons[weaponIdx];
         w->timePassed += dt;
@@ -397,7 +389,7 @@ internal void update_game(float dt)
           w->timePassed -= skillCooldown;
           
           // Add active weapon
-          gameState.activeAttacks[gameState.activeAttacksCount++] = aa;
+          gameState.activeAttacks.add(aa);
         }
       }
     }
@@ -425,7 +417,7 @@ internal void update_game(float dt)
   
   // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		ACTIVE ATTACKS START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
   {
-    for(int aaIdx = 0; aaIdx < gameState.activeAttacksCount; aaIdx++)
+    for(int aaIdx = 0; aaIdx < gameState.activeAttacks.count; aaIdx++)
     {
       ActiveAttack* aa = &gameState.activeAttacks[aaIdx];
       float skillDuration = 0.0f;
@@ -466,8 +458,7 @@ internal void update_game(float dt)
       // Active Attack ran out
       if(aa->timePassed >= skillDuration) 
       { 
-        *aa = gameState.activeAttacks[--gameState.activeAttacksCount];
-        aaIdx--;
+        gameState.activeAttacks.remove_and_swap(aaIdx--);
       }
     }
   }
@@ -476,7 +467,7 @@ internal void update_game(float dt)
   
   // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		HANDLE DAMAGING AREAS START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
   {
-    for(int daIdx = 0; daIdx < gameState.damagingAreasCount; daIdx++)
+    for(int daIdx = 0; daIdx < gameState.damagingAreas.count; daIdx++)
     {
       DamagingArea* da = &gameState.damagingAreas[daIdx];
       
@@ -490,8 +481,7 @@ internal void update_game(float dt)
       da->timePassed += dt;
       if(da->timePassed > da->duration)
       {
-        *da = gameState.damagingAreas[--gameState.damagingAreasCount];
-        daIdx--;
+        gameState.damagingAreas.remove_and_swap(daIdx--);
         continue;
       }
       
@@ -500,7 +490,7 @@ internal void update_game(float dt)
       // TODO: Only the first one is blue!
       //draw_quad(daCollider.pos, daCollider.size, COLOR_BLUE);
       
-      for(int enemyIdx = 0; enemyIdx < gameState.enemyCount; enemyIdx++)
+      for(int enemyIdx = 0; enemyIdx < gameState.enemies.count; enemyIdx++)
       {
         Entity* enemy = &gameState.enemies[enemyIdx];
         Circle enemyCollider = get_collider(*enemy);
@@ -518,8 +508,7 @@ internal void update_game(float dt)
           enemy->hp -= 200;
           if(enemy->hp <= 0)
           {
-            *enemy = gameState.enemies[--gameState.enemyCount];
-            enemyIdx--;
+            gameState.enemies.remove_and_swap(enemyIdx--);
             continue;
           }
           
@@ -529,7 +518,7 @@ internal void update_game(float dt)
           enemy->pushDirection = pushDir * 10.0f;
           
           // Add to hit targets
-          da->hitEnemyIDS[da->hitEnemiesCount++] = enemy->ID;
+          da->hitEnemyIDs.add(enemy->ID);
         }
       }
       

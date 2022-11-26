@@ -4,6 +4,7 @@
 #include "platform.h"
 #include "logger.h"
 #include "config.h"
+#include "common.h"
 
 // Game Layer
 #include "game.cpp"
