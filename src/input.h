@@ -1,7 +1,6 @@
 #pragma once 
 #include "my_math.h"
 
-
 enum KeyID
 {
   KEY_COUNT = 255,
@@ -94,28 +93,28 @@ struct Input
   KeyState keys[KEY_COUNT];
 };
 
-global_variable Input input;
+global_variable Input* input = 0;
 
 internal bool is_key_down(KeyID key)
 {
-  bool result = input.keys[key].isDown;
+  bool result = input->keys[key].isDown;
   return result;
 }
 
 internal bool is_key_up(KeyID key)
 {
-  bool result = !input.keys[key].isDown;
+  bool result = !input->keys[key].isDown;
   return result;
 }
 
 internal bool is_key_pressed(KeyID key)
 {
-  bool result = (input.keys[key].isDown && input.keys[key].halfTransitionCount == 1) || input.keys[key].halfTransitionCount > 1;
+  bool result = (input->keys[key].isDown && input->keys[key].halfTransitionCount == 1) || input->keys[key].halfTransitionCount > 1;
   return result;
 }
 
 internal bool is_key_released(KeyID key)
 {
-  bool result = (!input.keys[key].isDown && input.keys[key].halfTransitionCount == 1) || input.keys[key].halfTransitionCount > 1;
+  bool result = (!input->keys[key].isDown && input->keys[key].halfTransitionCount == 1) || input->keys[key].halfTransitionCount > 1;
   return result;
 }

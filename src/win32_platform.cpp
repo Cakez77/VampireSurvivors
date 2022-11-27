@@ -3,11 +3,9 @@
 #include "input.h"
 #include "platform.h"
 #include "logger.h"
-#include "config.h"
 #include "common.h"
-
-// Game Layer
-#include "game.cpp"
+#include "config.h"
+#include "shared.h"
 
 // Asset Layer
 #include "assets.cpp"
@@ -50,8 +48,8 @@ LRESULT CALLBACK window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
       RECT r;
       GetClientRect(window, &r);
       
-      input.screenSize.x = r.right - r.left;
-      input.screenSize.y = r.bottom - r.top;
+      input->screenSize.x = r.right - r.left;
+      input->screenSize.y = r.bottom - r.top;
       
       renderer_resize();
       
@@ -67,8 +65,8 @@ LRESULT CALLBACK window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
         int isEcho = isDown && ((lParam >> 30) & 1);
         if(!isEcho)
         {
-          input.keys[wParam].halfTransitionCount += 1;
-          input.keys[wParam].isDown = isDown;
+          input->keys[wParam].halfTransitionCount += 1;
+          input->keys[wParam].isDown = isDown;
         }
       }
     } break;
@@ -80,14 +78,14 @@ LRESULT CALLBACK window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
     
     case WM_MOUSEMOVE:
     {
-      input.oldMousePos = input.mousePosScreen;
+      input->oldMousePos = input->mousePosScreen;
       
       // Mouse Position
-      input.mousePosScreen.x = (float)GET_X_LPARAM(lParam);
-      input.mousePosScreen.y = (float)GET_Y_LPARAM(lParam);
+      input->mousePosScreen.x = (float)GET_X_LPARAM(lParam);
+      input->mousePosScreen.y = (float)GET_Y_LPARAM(lParam);
       
       // Relative Movement
-      input.relMouseScreen = input.mousePosScreen - input.oldMousePos;
+      input->relMouseScreen = input->mousePosScreen - input->oldMousePos;
       
       break;
     }
@@ -182,9 +180,31 @@ internal void platform_update_window()
 }
 
 
+typedef void(init_game_type)(GameState*, Input*, Dunno*);
+typedef void(update_game_type)(GameState*, float);
+
 
 int main()
 { 
+  // TODO Allocate input later
+  Input i = {};
+  input = &i;
+  
+  Dunno* dunno = (Dunno*)malloc(sizeof(Dunno));
+  *dunno = {};
+  
+  // game dll stuff
+  init_game_type* init_game = 0;
+  update_game_type* update_game = 0;
+  
+  long long lastEditDLLTimestamp = 0;
+  long long DLLTimestamp = platform_last_edit_timestamp("game.dll");
+  HMODULE gameDLL = LoadLibrary("game_load.dll");
+  
+  init_game = (init_game_type*)GetProcAddress(gameDLL, "init_game");
+  update_game = (update_game_type*)GetProcAddress(gameDLL, "update_game");
+  
+  
   transientBuffer = (char*)malloc(TRANSIENT_BUFFER_SIZE);
   
   // Delta Time Stuff
@@ -196,17 +216,42 @@ int main()
   
   platform_create_window(WORLD_SIZE.x, WORLD_SIZE.y, "VSClone");
   
-  init_open_gl(window);
+  gl_init(window, dunno);
   // @Note(tkap, 21/11/2022): To not blow up my pc
   renderer_set_vertical_sync(true);
   
   // Seed for random numbers
   srand((uint32_t)__rdtsc());
   
-  init_game();
+  GameState gameState = {};
+  
+  // TODO ENABLE LATER
+  init_game(&gameState, input, dunno);
   
   while(running)
   {
+    long long DLLTimestamp = platform_last_edit_timestamp("game.dll");
+    if(DLLTimestamp > lastEditDLLTimestamp)
+    {
+      FreeLibrary(gameDLL);
+      if(CopyFile("game.dll", "game_load.dll", false))
+      {
+        lastEditDLLTimestamp = DLLTimestamp;
+      }
+      
+      // Load Lib
+      {
+        gameDLL = LoadLibrary("game_load.dll");
+        
+        init_game = (init_game_type*)GetProcAddress(gameDLL, "init_game");
+        CAKEZ_ASSERT(init_game, "DUH!");
+        update_game = (update_game_type*)GetProcAddress(gameDLL, "update_game");
+        CAKEZ_ASSERT(update_game, "DUH!");
+        
+        init_game(&gameState, input, dunno);
+      }
+    }
+    
     // Reset temporary memory
     transientBytesUsed = 0;
     
@@ -236,10 +281,10 @@ int main()
     
     platform_update_window();
     
-    update_game(dt);
+    update_game(&gameState, dt);
     for(int key_i = 0; key_i < KEY_COUNT; key_i++)
     {
-      input.keys[key_i].halfTransitionCount = 0;
+      input->keys[key_i].halfTransitionCount = 0;
     }
     
     gl_render();

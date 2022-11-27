@@ -23,8 +23,7 @@ struct GLContext
   uint32_t transformSBOID;
   Texture textureAtlas01;
   
-  Array<Material, MAX_MATERIALS> materials;
-  Array<Transform, MAX_TRANSFORMS> transforms;
+  Dunno* dunno;
 };
 
 
@@ -103,8 +102,10 @@ internal void init_open_gl_functions()
   init_gl_func(glGetProgramInfoLog);
 }
 
-internal bool init_open_gl(void* window)
+internal bool gl_init(void* window, Dunno* dunno)
 {
+  glContext.dunno = dunno;
+  
   // Fake Window Bullshit
   {
     HWND fake_window = CreateWindowEx(0,"cakez_window_class", "window name", WS_OVERLAPPEDWINDOW, 
@@ -377,43 +378,13 @@ internal bool init_open_gl(void* window)
     // Supply Screen Size of the Shader
     {
       glContext.screenSizeID = glGetUniformLocation(glContext.programID, "screenSize");
-      glUniform2fv(glContext.screenSizeID, 1, (float*)&input.screenSize);
+      glUniform2fv(glContext.screenSizeID, 1, (float*)&input->screenSize);
     }
   }
   
   glContext.initialized = true;
   
   return true;
-}
-
-internal void add_transform(Transform t = {})
-{
-  glContext.transforms.add(t);
-}
-
-internal int get_material_idx(Vec4 color)
-{
-  int idx = 0;
-  bool foundMaterial = false;
-  
-  for(int materialIdx = 0; materialIdx < glContext.materials.count; materialIdx++)
-  {
-    if(glContext.materials[materialIdx].color == color)
-    {
-      idx = materialIdx;
-      foundMaterial = true;
-      break;
-    }
-  }
-  
-  if(!foundMaterial)
-  {
-    Material m = {color};
-    
-    idx = glContext.materials.add(m);
-  }
-  
-  return idx;
 }
 
 internal void hot_reload_textures()
@@ -454,30 +425,31 @@ internal bool gl_render()
     // Copy Materials to GPU
     {
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.materialSBOID);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Material) * glContext.materials.count,
-                   glContext.materials.elements, GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, 
+                   sizeof(Material) * glContext.dunno->materials.count,
+                   glContext.dunno->materials.elements, GL_STATIC_DRAW);
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
       
-      glContext.materials.count = 0;
+      glContext.dunno->materials.count = 0;
     }
     
     // Copy Transforms to GPU
     {
       // Use the Buffer, (active)
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.transformSBOID);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(Transform) * glContext.transforms.count,
-                   glContext.transforms.elements, GL_STATIC_DRAW);
+      glBufferData(GL_SHADER_STORAGE_BUFFER, 
+                   sizeof(Transform) * glContext.dunno->transforms.count,
+                   glContext.dunno->transforms.elements, GL_STATIC_DRAW);
       
       //Undinds the buffer after usage (inactive)
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
       
-      glDrawArraysInstanced(GL_TRIANGLES, 0, 6, glContext.transforms.count);
-      glContext.transforms.count = 0;
+      glDrawArraysInstanced(GL_TRIANGLES, 0, 6, glContext.dunno->transforms.count);
+      glContext.dunno->transforms.count = 0;
     }
     
     SwapBuffers(glContext.dc);
   }
-  
   
   return true;
 }
@@ -487,100 +459,23 @@ internal bool gl_render()
 //#############################################################
 
 // @Note(tkap, 22/11/2022): Not the best name
-void draw_transform(DrawData drawData)
-{
-  Sprite s = get_sprite(drawData.spriteID);
-  Transform t = {};
-  t.pos = drawData.pos;
-  t.size = drawData.size;
-  t.atlasOffset = s.atlasOffset;
-  t.spriteSize = s.subSize;
-  t.renderOptions = drawData.renderOptions;
-  t.materialIdx = get_material_idx(drawData.color);
-  add_transform(t);
-}
 
-void draw_quad(Vec2 pos, Vec2 size, DrawData drawData)
-{
-  drawData.pos = pos;
-  drawData.size = size;
-  
-  draw_transform(drawData);
-}
-
-void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 size, DrawData drawData)
-{
-  drawData.spriteID = spriteID;
-  drawData.pos = pos;
-  drawData.size = size;
-  
-  draw_transform(drawData);
-}
-
-void draw_line(Vec2 a, Vec2 b, Vec4 color)
-{
-  // TODO: Optimize this, use angle, rotation in shader
-  float lineLength = length(b - a);
-  Vec2 direction = normalize(b - a);
-  
-  draw_quad(a + direction * 0.0f * lineLength, {2.0f, 2.0f}, {.color = color});
-  draw_quad(a + direction * 0.1f * lineLength, {2.0f, 2.0f}, {.color = color});
-  draw_quad(a + direction * 0.2f * lineLength, {2.0f, 2.0f}, {.color = color});
-  draw_quad(a + direction * 0.3f * lineLength, {2.0f, 2.0f}, {.color = color});
-  draw_quad(a + direction * 0.4f * lineLength, {2.0f, 2.0f}, {.color = color});
-  draw_quad(a + direction * 0.5f * lineLength, {2.0f, 2.0f}, {.color = color});
-  draw_quad(a + direction * 0.6f * lineLength, {2.0f, 2.0f}, {.color = color});
-  draw_quad(a + direction * 0.7f * lineLength, {2.0f, 2.0f}, {.color = color});
-  draw_quad(a + direction * 0.8f * lineLength, {2.0f, 2.0f}, {.color = color});
-  draw_quad(a + direction * 0.9f * lineLength, {2.0f, 2.0f}, {.color = color});
-  draw_quad(a + direction * 1.0f * lineLength, {2.0f, 2.0f}, {.color = color});
-}
-
-void draw_circle(Circle c, Vec4 color)
-{
-  float angle = 0.32f;
-  for(uint32_t i = 0; i < 20; i++)
-  {
-    Vec2 a = Vec2{c.radius * sinf(i * angle), c.radius * cosf(i * angle)};
-    draw_quad(c.pos + a, {2.0f, 2.0f}, {.color = color});
-  }
-}
-
-void draw_box(Vec2 pos, Vec2 size, Vec4 color, float lineThickness)
-{
-  // Top Side
-  draw_quad(pos - Vec2{0.0f, (size.y - lineThickness) / 2.0f}, 
-            {size.x, lineThickness}, {.color = color});
-  
-  // Left Side
-  draw_quad(pos - Vec2{(size.x - lineThickness) / 2.0f}, 
-            {lineThickness, size.y}, {.color = color});
-  
-  // Right Side
-  draw_quad(pos + Vec2{(size.x - lineThickness) / 2.0f}, 
-            {lineThickness, size.y}, {.color = color});
-  
-  // Bottom Side
-  draw_quad(pos + Vec2{0.0f, (size.y - lineThickness) / 2.0f},
-            {size.x, lineThickness}, {.color = color});
-}
-
-bool renderer_get_vertical_sync()
+internal bool renderer_get_vertical_sync()
 {
   return glContext.vSync;
 }
 
-void renderer_set_vertical_sync(bool vSync)
+internal void renderer_set_vertical_sync(bool vSync)
 {
   glContext.vSync = vSync;
   wglSwapIntervalEXT(vSync);
 }
 
-void renderer_resize()
+internal void renderer_resize()
 {
   if(glContext.initialized)
   {
-    glViewport(0, 0, input.screenSize.x, input.screenSize.y);
-    glUniform2fv(glContext.screenSizeID, 1, (float*)&input.screenSize);
+    glViewport(0, 0, input->screenSize.x, input->screenSize.y);
+    glUniform2fv(glContext.screenSizeID, 1, (float*)&input->screenSize);
   }
 }

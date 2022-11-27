@@ -1,6 +1,5 @@
 #pragma once
 #include "defines.h"
-#include "logger.h"
 
 /* TODO: This could be the macro way, could test this out
 #define TEST_ARRAY(_name, _type, _N) \
@@ -33,22 +32,22 @@ struct Array
   
   T& operator[](int idx)
   {
-    CAKEZ_ASSERT(idx >= 0, "Idx negative!");
-    CAKEZ_ASSERT(idx < count, "Idx out of bounds!");
+    //CAKEZ_ASSERT(idx >= 0, "Idx negative!");
+    //CAKEZ_ASSERT(idx < count, "Idx out of bounds!");
     return elements[idx];
   }
   
   int add(T element)
   {
-    CAKEZ_ASSERT(count < maxElements, "Array Full!");
+    //CAKEZ_ASSERT(count < maxElements, "Array Full!");
     elements[count] = element;
     return count++;
   }
   
   void remove_and_swap(int idx)
   {
-    CAKEZ_ASSERT(idx >= 0, "Idx negative!");
-    CAKEZ_ASSERT(idx < count, "Idx out of bounds!");
+    //CAKEZ_ASSERT(idx >= 0, "Idx negative!");
+    //CAKEZ_ASSERT(idx < count, "Idx out of bounds!");
     elements[idx] = elements[--count];
   }
 };
