@@ -16,7 +16,9 @@
 #include "gl_renderer.cpp"
 
 // Memory
+global_variable int persistentBytesUsed = 0;
 global_variable int transientBytesUsed = 0;
+global_variable char* persistentBuffer = 0;
 global_variable char* transientBuffer = 0;
 
 global_variable bool running = true;
@@ -180,18 +182,35 @@ internal void platform_update_window()
 }
 
 
-typedef void(init_game_type)(GameState*, Input*, Dunno*);
-typedef void(update_game_type)(GameState*, float);
+typedef void(init_game_type)(GameState*, Input*, RenderData*);
+typedef void(update_game_type)(GameState*, Input*, RenderData*, float);
 
 
 int main()
 { 
-  // TODO Allocate input later
-  Input i = {};
-  input = &i;
+  transientBuffer = (char*)malloc(TRANSIENT_BUFFER_SIZE);
+  persistentBuffer = (char*)malloc(PERSISTANT_BUFFER_SIZE);
   
-  Dunno* dunno = (Dunno*)malloc(sizeof(Dunno));
-  *dunno = {};
+  input = (Input*)platform_allocate_persistent(sizeof(Input));
+  if(!input)
+  {
+    CAKEZ_FATAL("Failed to allocate Memory for Input!");
+    return -1;
+  }
+  
+  RenderData* renderData = (RenderData*)platform_allocate_persistent(sizeof(RenderData));
+  if(!renderData)
+  {
+    CAKEZ_FATAL("Failed to allocate Memory for RenderData!");
+    return -1;
+  }
+  
+  GameState* gameState = (GameState*)platform_allocate_persistent(sizeof(GameState));
+  if(!gameState)
+  {
+    CAKEZ_FATAL("Failed to allocate Memory for the GameState!");
+    return -1;
+  }
   
   // game dll stuff
   init_game_type* init_game = 0;
@@ -200,12 +219,16 @@ int main()
   long long lastEditDLLTimestamp = 0;
   long long DLLTimestamp = platform_last_edit_timestamp("game.dll");
   HMODULE gameDLL = LoadLibrary("game_load.dll");
+  if(!gameDLL)
+  {
+    CAKEZ_ASSERT(gameDLL, "Failed to load Game Library!");
+    return -1;
+  }
   
   init_game = (init_game_type*)GetProcAddress(gameDLL, "init_game");
+  CAKEZ_ASSERT(init_game, "Failed to load init_game function");
   update_game = (update_game_type*)GetProcAddress(gameDLL, "update_game");
-  
-  
-  transientBuffer = (char*)malloc(TRANSIENT_BUFFER_SIZE);
+  CAKEZ_ASSERT(update_game, "Failed to load update_game function");
   
   // Delta Time Stuff
   global_variable LARGE_INTEGER ticksPerSecond;
@@ -216,17 +239,14 @@ int main()
   
   platform_create_window(WORLD_SIZE.x, WORLD_SIZE.y, "VSClone");
   
-  gl_init(window, dunno);
+  gl_init(window, renderData);
   // @Note(tkap, 21/11/2022): To not blow up my pc
   renderer_set_vertical_sync(true);
   
+  init_game(gameState, input, renderData);
+  
   // Seed for random numbers
   srand((uint32_t)__rdtsc());
-  
-  GameState gameState = {};
-  
-  // TODO ENABLE LATER
-  init_game(&gameState, input, dunno);
   
   while(running)
   {
@@ -239,7 +259,7 @@ int main()
         lastEditDLLTimestamp = DLLTimestamp;
       }
       
-      // Load Lib
+      //Load Lib
       {
         gameDLL = LoadLibrary("game_load.dll");
         
@@ -247,8 +267,6 @@ int main()
         CAKEZ_ASSERT(init_game, "DUH!");
         update_game = (update_game_type*)GetProcAddress(gameDLL, "update_game");
         CAKEZ_ASSERT(update_game, "DUH!");
-        
-        init_game(&gameState, input, dunno);
       }
     }
     
@@ -281,7 +299,7 @@ int main()
     
     platform_update_window();
     
-    update_game(&gameState, dt);
+    update_game(gameState, input, renderData, dt);
     for(int key_i = 0; key_i < KEY_COUNT; key_i++)
     {
       input->keys[key_i].halfTransitionCount = 0;
@@ -461,4 +479,23 @@ char* platform_allocate_transient(uint32_t sizeInBytes)
   }
   
   return buffer;
+}
+
+char* platform_allocate_persistent(uint32_t sizeInBytes)
+{
+  char* buffer = 0;
+  
+  if(persistentBytesUsed + sizeInBytes < TRANSIENT_BUFFER_SIZE)
+  {
+    buffer = persistentBuffer + persistentBytesUsed;
+    memset(buffer, 0, sizeInBytes);
+    persistentBytesUsed += sizeInBytes;
+  }
+  else
+  {
+    CAKEZ_ASSERT(0, "Exausted Persitent Storage!");
+  }
+  
+  return buffer;
+  
 }

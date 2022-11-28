@@ -4,6 +4,8 @@
 
 extern "C"
 {
-  __declspec(dllexport) void init_game(GameState* gameState, Input* inputIn, Dunno* dunnoIn);
-  __declspec(dllexport) void update_game(GameState* gameState, float dt);
+  __declspec(dllexport) void init_game(GameState* gameStateIn, Input* inputIn,
+                                       RenderData* renderDataIn);
+  __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn, 
+                                         RenderData* renderDataIn, float dt);
 }

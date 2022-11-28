@@ -1,8 +1,10 @@
 #include "render_interface.h"
 
+// This assumes a global variable "RenderData* renderData" to exist
+
 internal void add_transform(Transform t = {})
 {
-  dunno->transforms.add(t);
+  renderData->transforms.add(t);
 }
 
 internal int get_material_idx(Vec4 color)
@@ -10,9 +12,9 @@ internal int get_material_idx(Vec4 color)
   int idx = 0;
   bool foundMaterial = false;
   
-  for(int materialIdx = 0; materialIdx < dunno->materials.count; materialIdx++)
+  for(int materialIdx = 0; materialIdx < renderData->materials.count; materialIdx++)
   {
-    if(dunno->materials[materialIdx].color == color)
+    if(renderData->materials[materialIdx].color == color)
     {
       idx = materialIdx;
       foundMaterial = true;
@@ -24,7 +26,7 @@ internal int get_material_idx(Vec4 color)
   {
     Material m = {color};
     
-    idx = dunno->materials.add(m);
+    idx = renderData->materials.add(m);
   }
   
   return idx;

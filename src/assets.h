@@ -16,6 +16,7 @@ enum SpriteID
   SPRITE_ENEMY_02,
   SPRITE_HERO_KARATE_MAN,
   SPRITE_EFFECT_WHIP,
+  SPRITE_CRYSTAL,
   
   SPRITE_COUNT,
 };
@@ -74,6 +75,15 @@ internal Sprite get_sprite(SpriteID spriteID)
       s.atlasOffset = {144, 0};
       s.size = {240, 32};
       s.subSize = {240, 32};
+      
+      break;
+    }
+    
+    case SPRITE_CRYSTAL:
+    {
+      s.atlasOffset = {16, 0};
+      s.size = {16, 16};
+      s.subSize = {16, 16};
       
       break;
     }

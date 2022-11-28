@@ -23,7 +23,7 @@ struct GLContext
   uint32_t transformSBOID;
   Texture textureAtlas01;
   
-  Dunno* dunno;
+  RenderData* renderData;
 };
 
 
@@ -102,9 +102,10 @@ internal void init_open_gl_functions()
   init_gl_func(glGetProgramInfoLog);
 }
 
-internal bool gl_init(void* window, Dunno* dunno)
+internal bool gl_init(void* window, RenderData* renderData)
 {
-  glContext.dunno = dunno;
+  // Memory shared by the game and the platform
+  glContext.renderData = renderData;
   
   // Fake Window Bullshit
   {
@@ -426,11 +427,11 @@ internal bool gl_render()
     {
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.materialSBOID);
       glBufferData(GL_SHADER_STORAGE_BUFFER, 
-                   sizeof(Material) * glContext.dunno->materials.count,
-                   glContext.dunno->materials.elements, GL_STATIC_DRAW);
+                   sizeof(Material) * glContext.renderData->materials.count,
+                   glContext.renderData->materials.elements, GL_STATIC_DRAW);
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
       
-      glContext.dunno->materials.count = 0;
+      glContext.renderData->materials.count = 0;
     }
     
     // Copy Transforms to GPU
@@ -438,14 +439,14 @@ internal bool gl_render()
       // Use the Buffer, (active)
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.transformSBOID);
       glBufferData(GL_SHADER_STORAGE_BUFFER, 
-                   sizeof(Transform) * glContext.dunno->transforms.count,
-                   glContext.dunno->transforms.elements, GL_STATIC_DRAW);
+                   sizeof(Transform) * glContext.renderData->transforms.count,
+                   glContext.renderData->transforms.elements, GL_STATIC_DRAW);
       
       //Undinds the buffer after usage (inactive)
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
       
-      glDrawArraysInstanced(GL_TRIANGLES, 0, 6, glContext.dunno->transforms.count);
-      glContext.dunno->transforms.count = 0;
+      glDrawArraysInstanced(GL_TRIANGLES, 0, 6, glContext.renderData->transforms.count);
+      glContext.renderData->transforms.count = 0;
     }
     
     SwapBuffers(glContext.dc);

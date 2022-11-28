@@ -15,7 +15,7 @@
 //#############################################################
 global_variable GameState* gameState = 0;
 #include "render_interface.h"
-global_variable Dunno* dunno = 0;
+global_variable RenderData* renderData = 0;
 #include "render_interface.cpp"
 
 internal void player_add_weapon(WeaponID ID, int level = 0)
@@ -26,6 +26,11 @@ internal void player_add_weapon(WeaponID ID, int level = 0)
   
   // TODO: We can't add inifite atcive weapons, some HAVE to be passive effects
   gameState->player.weapons.add(w);
+}
+
+internal Circle get_pickup_collider(Player p)
+{
+  return {p.pos + p.collider.pos, p.pickupRadius};
 }
 
 internal Circle get_collider(Player p)
@@ -64,12 +69,14 @@ internal void add_damaging_area(SpriteID spriteID, Vec2 pos, Vec2 size, float du
   gameState->damagingAreas.add(da);
 }
 
-__declspec(dllexport) void init_game(GameState* gameStateIn, Input* inputIn, Dunno* dunnoIn)
+__declspec(dllexport) void init_game(GameState* gameStateIn, Input* inputIn,
+                                     RenderData* renderDataIn)
 {
   gameState = gameStateIn;
-  *gameState = {};
   input = inputIn;
-  dunno = dunnoIn;
+  renderData = renderDataIn;
+  
+  *gameState = {};
   
   player_add_weapon(WEAPON_WHIP);
   
@@ -78,8 +85,21 @@ __declspec(dllexport) void init_game(GameState* gameStateIn, Input* inputIn, Dun
   gameState->playerScreenEdgeDist = length(vec_2(WORLD_SIZE - WORLD_SIZE / 2)) + 50.0f;
 }
 
-__declspec(dllexport) void update_game(GameState* gameState, float dt)
+__declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn, 
+                                       RenderData* renderDataIn, float dt)
 {
+  // Make sure we use the correct memory
+  {
+    if(gameState != gameStateIn ||
+       input != inputIn ||
+       renderData != renderDataIn)
+    {
+      gameState = gameStateIn;
+      input = inputIn;
+      renderData = renderDataIn;
+    }
+  }
+  
   gameState->totalTime += dt;
   gameState->spawnTimer += dt;
   
@@ -130,7 +150,7 @@ __declspec(dllexport) void update_game(GameState* gameState, float dt)
           
           if(gameState->player.hp <= 0)
           {
-            init_game(gameState, input, dunno);
+            init_game(gameState, input, renderData);
             return;
           }
         }
@@ -315,8 +335,6 @@ __declspec(dllexport) void update_game(GameState* gameState, float dt)
         // Background
         draw_quad(p->pos + Vec2{0.0f, 50.0f}, {69.0f, 10.0f}, {.color = COLOR_BLACK});
         
-        draw_quad({100, 100},{20, 30});
-        
         // Actual HP
         float hpPercent = (float)p->hp / (float)p->maxHP;
         draw_quad(p->pos + Vec2{-(1.0f - hpPercent) * 69.0f / 2.0f, 50.0f}, 
@@ -324,7 +342,37 @@ __declspec(dllexport) void update_game(GameState* gameState, float dt)
       }
     }
   }
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE PLAYER END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE PLAYER END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  
+  // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		UPDATE PICKUPS START		vvvvvvvvvvvvvvvvvvvvvvvvv
+  {
+    Circle playerPickupCollider = get_pickup_collider(gameState->player);
+    for(int pickupIdx = 0; pickupIdx < gameState->pickups.count; pickupIdx++)
+    {
+      Pickup* p = &gameState->pickups[pickupIdx];
+      
+      SpriteID spriteID = SPRITE_WHITE;
+      
+      switch(p->type)
+      {
+        case PICKUP_TYPE_EXP:
+        {
+          spriteID = SPRITE_CRYSTAL;
+          break;
+        }
+      }
+      
+      Sprite s = get_sprite(spriteID);
+      draw_sprite(spriteID, p->pos, vec_2(s.subSize) * 1.5f);
+      
+      if(point_in_circle(p->pos, playerPickupCollider))
+      {
+        gameState->pickups.remove_and_swap(pickupIdx--);
+        continue;
+      }
+    }
+  }
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE PLAYER END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
   // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		ACTIVE ATTACKS START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
   {
@@ -419,6 +467,14 @@ __declspec(dllexport) void update_game(GameState* gameState, float dt)
           enemy->hp -= 200;
           if(enemy->hp <= 0)
           {
+            // Drop EXP Gem
+            {
+              Pickup pickup = {};
+              pickup.type = PICKUP_TYPE_EXP;
+              pickup.pos = enemy->pos;
+              gameState->pickups.add(pickup);
+            }
+            
             gameState->enemies.remove_and_swap(enemyIdx--);
             continue;
           }

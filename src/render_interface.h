@@ -19,7 +19,7 @@ struct DrawData
   RenderOptions renderOptions;
 };
 
-struct Dunno
+struct RenderData
 {
   Array<Material, MAX_MATERIALS> materials;
   Array<Transform, MAX_TRANSFORMS> transforms;
