@@ -33,6 +33,11 @@ internal Circle get_pickup_collider(Player p)
   return {p.pos + p.collider.pos, p.pickupRadius};
 }
 
+internal Circle get_pickup_trigger_collider(Player p)
+{
+  return {p.pos + p.collider.pos, p.pickupTriggerRadius};
+}
+
 internal Circle get_collider(Player p)
 {
   return {p.pos + p.collider.pos, p.collider.radius};
@@ -350,6 +355,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
   // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		UPDATE PICKUPS START		vvvvvvvvvvvvvvvvvvvvvvvvv
   {
     Circle playerPickupCollider = get_pickup_collider(gameState->player);
+    Circle playerPickupTriggerCollider = get_pickup_trigger_collider(gameState->player);
     for(int pickupIdx = 0; pickupIdx < gameState->pickups.count; pickupIdx++)
     {
       Pickup* p = &gameState->pickups[pickupIdx];
@@ -360,6 +366,23 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       {
         case PICKUP_TYPE_EXP:
         {
+          if(!p->triggered && point_in_circle(p->pos, playerPickupTriggerCollider))
+          {
+            p->triggered = true;
+            
+            // @Note(tkap, 29/11/2022): Start by going away from the player, same effect as VS
+            p->vel = normalize(p->pos - gameState->player.pos) * 125;
+          }
+          if(p->triggered)
+          {
+            Vec2 dir = normalize(gameState->player.pos - p->pos);
+            p->vel += dir * dt * 500;
+            
+            // @Note(tkap, 29/11/2022): Capping the speed
+            p->vel = p->vel * 0.9f;
+            
+            p->pos += p->vel * dt * 10;
+          }
           spriteID = SPRITE_CRYSTAL;
           break;
         }

@@ -61,7 +61,8 @@ struct Player
   Vec2 pos;
   Circle collider ={{0.0f, 0.0f}, 12.0f};
   float speed = 400.0f;
-  float pickupRadius = 60.0f;
+  float pickupTriggerRadius = 100.0f;
+  float pickupRadius = 40.0f;
   bool flipX;
   
   int maxHP = 300;
@@ -89,6 +90,7 @@ enum PickupType
 
 struct Pickup
 {
+  bool triggered;
   PickupType type;
   Vec2 pos;
   Vec2 vel;

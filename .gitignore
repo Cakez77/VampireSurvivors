@@ -5,3 +5,4 @@
 *.exe
 tkap_build.bat
 .vs
+game_load.dll
