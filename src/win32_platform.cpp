@@ -185,7 +185,6 @@ internal void platform_update_window()
 typedef void(init_game_type)(GameState*, Input*, RenderData*);
 typedef void(update_game_type)(GameState*, Input*, RenderData*, float);
 
-
 int main()
 { 
   transientBuffer = (char*)malloc(TRANSIENT_BUFFER_SIZE);
@@ -217,17 +216,7 @@ int main()
   update_game_type* update_game = 0;
   
   long long lastEditDLLTimestamp = 0;
-  HMODULE gameDLL = LoadLibrary("game_load.dll");
-  if(!gameDLL)
-  {
-    CAKEZ_ASSERT(gameDLL, "Failed to load Game Library!");
-    return -1;
-  }
-  
-  init_game = (init_game_type*)GetProcAddress(gameDLL, "init_game");
-  CAKEZ_ASSERT(init_game, "Failed to load init_game function");
-  update_game = (update_game_type*)GetProcAddress(gameDLL, "update_game");
-  CAKEZ_ASSERT(update_game, "Failed to load update_game function");
+  HMODULE gameDLL = NULL;
   
   // Delta Time Stuff
   global_variable LARGE_INTEGER ticksPerSecond;
@@ -242,32 +231,53 @@ int main()
   // @Note(tkap, 21/11/2022): To not blow up my pc
   renderer_set_vertical_sync(true);
   
-  init_game(gameState, input, renderData);
+  bool isGameInitialized = false;
   
   // Seed for random numbers
   srand((uint32_t)__rdtsc());
   
   while(running)
   {
-    long long DLLTimestamp = platform_last_edit_timestamp("game.dll");
-    if(DLLTimestamp > lastEditDLLTimestamp)
+    // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		DLL STUFF START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     {
-      FreeLibrary(gameDLL);
-      if(CopyFile("game.dll", "game_load.dll", false))
+      long long DLLTimestamp = platform_last_edit_timestamp("game.dll");
+      if(DLLTimestamp > lastEditDLLTimestamp)
       {
         lastEditDLLTimestamp = DLLTimestamp;
-      }
+        printf("New DLL found\n");
       
-      //Load Lib
-      {
-        gameDLL = LoadLibrary("game_load.dll");
+        if(gameDLL)
+        {
+          BOOL freeResult = FreeLibrary(gameDLL);
+          assert(freeResult);
+          gameDLL = NULL;
+          printf("Freed library\n");
+        }
+        
+        while(!CopyFile("game.dll", "game_load.dll", false)) { Sleep(10); }
+        printf("Copied DLL\n");
+        while(true)
+        {
+          gameDLL = LoadLibrary("game_load.dll");
+          if(gameDLL) { break; }
+          Sleep(10);
+        }
+        printf("Loaded DLL\n");
         
         init_game = (init_game_type*)GetProcAddress(gameDLL, "init_game");
-        CAKEZ_ASSERT(init_game, "DUH!");
+        CAKEZ_ASSERT(init_game, "Failed to load init_game function from game DLL");
         update_game = (update_game_type*)GetProcAddress(gameDLL, "update_game");
-        CAKEZ_ASSERT(update_game, "DUH!");
+        CAKEZ_ASSERT(update_game, "Failed to load update_game function from game DLL");
       }
     }
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		DLL STUFF END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    
+    if(!isGameInitialized)
+    {
+      isGameInitialized = true;
+      init_game(gameState, input, renderData);
+    }    
+    
     
     // Reset temporary memory
     transientBytesUsed = 0;
