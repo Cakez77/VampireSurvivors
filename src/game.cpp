@@ -118,7 +118,10 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
         Vec2 spawnPos = playerPos + spawnDirection * gameState->playerScreenEdgeDist;
         
         Entity enemy = {.ID = gameState->entityIDCounter++, .pos = spawnPos};
-        enemy.hp += gameState->totalTime;
+        
+        // @Note(tkap, 29/11/2022): What even is this? WeirdDude
+        enemy.hp += (int)gameState->totalTime;
+        
         gameState->enemies.add(enemy);
         
         gameState->spawnTimer -= spawnRate;
@@ -326,7 +329,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     
     // Draw Player
     {
-      float playerScale = UNIT_SCALE + sinf2(gameState->totalTime * 10.0) * 0.125f;
+      float playerScale = UNIT_SCALE + sinf2(gameState->totalTime * 10.0f) * 0.125f;
       Sprite s = get_sprite(p->spriteID);
       draw_sprite(p->spriteID, p->pos, vec_2(s.subSize) * playerScale,
                   {.renderOptions = p->flipX ? RENDER_OPTION_FLIP_X : 0});
@@ -453,8 +456,6 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       {
         Entity* enemy = &gameState->enemies[enemyIdx];
         Circle enemyCollider = get_collider(*enemy);
-        
-        float pushout;
         
         if(has_hit_enemy(*da, enemy->ID))
         {

@@ -1,8 +1,10 @@
 #include "assets.h"
 
 #ifdef DEBUG
+#pragma warning(push, 0)
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#pragma warning(pop)
 #endif
 
 internal char* TEXTURE_PATHS[] = 

@@ -50,8 +50,8 @@ LRESULT CALLBACK window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
       RECT r;
       GetClientRect(window, &r);
       
-      input->screenSize.x = r.right - r.left;
-      input->screenSize.y = r.bottom - r.top;
+      input->screenSize.x = (float)(r.right - r.left);
+      input->screenSize.y = (float)(r.bottom - r.top);
       
       renderer_resize();
       
@@ -217,7 +217,6 @@ int main()
   update_game_type* update_game = 0;
   
   long long lastEditDLLTimestamp = 0;
-  long long DLLTimestamp = platform_last_edit_timestamp("game.dll");
   HMODULE gameDLL = LoadLibrary("game_load.dll");
   if(!gameDLL)
   {
@@ -350,7 +349,7 @@ void platform_log(char *msg, TextColor color)
   OutputDebugStringA(msg);
 #endif
   
-  WriteConsoleA(consoleHandle, msg, strlen(msg), 0, 0);
+  WriteConsoleA(consoleHandle, msg, (int)strlen(msg), 0, 0);
 }
 
 void platform_print_error()
