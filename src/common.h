@@ -22,6 +22,15 @@ void test()
 }
 */
 
+// @Note(tkap, 29/11/2022): Better to have a bad assert than no assert :smile:
+#ifdef DEBUG
+  #include <stdlib.h>
+  #include <stdio.h>
+  #define assert(cond) if(!(cond)) { printf("ASSERT FAILED AT %s (%i)\n", __FILE__, __LINE__); exit(1); }
+#else
+  #define assert(cond)
+#endif // DEBUG
+
 template <typename T, int N>
 struct Array
 {
@@ -34,12 +43,15 @@ struct Array
   {
     //CAKEZ_ASSERT(idx >= 0, "Idx negative!");
     //CAKEZ_ASSERT(idx < count, "Idx out of bounds!");
+    assert(idx >= 0);
+    assert(idx < count);
     return elements[idx];
   }
   
   int add(T element)
   {
     //CAKEZ_ASSERT(count < maxElements, "Array Full!");
+    assert(count < maxElements);
     elements[count] = element;
     return count++;
   }
@@ -48,6 +60,8 @@ struct Array
   {
     //CAKEZ_ASSERT(idx >= 0, "Idx negative!");
     //CAKEZ_ASSERT(idx < count, "Idx out of bounds!");
+    assert(idx >= 0);
+    assert(idx < count);
     elements[idx] = elements[--count];
   }
 };
