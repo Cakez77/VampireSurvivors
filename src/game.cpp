@@ -83,7 +83,8 @@ __declspec(dllexport) void init_game(GameState* gameStateIn, Input* inputIn,
   
   *gameState = {};
   
-  player_add_weapon(WEAPON_WHIP);
+  //player_add_weapon(WEAPON_WHIP);
+  player_add_weapon(WEAPON_GARLIC);
   
   gameState->player.pos.x = input->screenSize.x / 2;
   gameState->player.pos.y = input->screenSize.y / 2;
@@ -304,6 +305,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
         w->timePassed += dt;
         
         ActiveAttack aa = {};
+        aa.ID = w->ID;
         float skillCooldown = 0.0f;
         
         switch(w->ID)
@@ -313,11 +315,43 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
             skillCooldown = 1.0f;
             
             // Fill in data for Active Attack
-            aa.ID = w->ID;
             aa.pos = gameState->player.pos; // TODO: Needed???
             aa.whip.maxSlashCount = w->level < 2? 3: w->level < 5? 4: 5;
             
             break;
+          }
+          
+          case WEAPON_GARLIC:
+          {
+            float hitRate = 0.5f;
+            draw_sprite(SPRITE_EFFECT_GARLIC, gameState->player.pos, {150.0f, 150.0f});
+            
+            for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
+            {
+              Entity* e = &gameState->enemies[enemyIdx];
+              Circle enemyCollider = get_collider(*e);
+              Circle garlicCollider = {gameState->player.pos, 100.0f};
+              
+              if(point_in_circle(e->pos, garlicCollider))
+              {
+                while(e->garlicHitTimer <= 0.0f)
+                {
+                  e->hp -= 100;
+                  e->garlicHitTimer += hitRate;
+                }
+                
+              }
+              
+              e->garlicHitTimer -= dt;
+              
+              if(e->hp <= 0)
+              {
+                gameState->enemies.remove_and_swap(enemyIdx--);
+                continue;
+              }
+            }
+            
+            continue;
           }
         }
         
@@ -394,6 +428,14 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       if(point_in_circle(p->pos, playerPickupCollider))
       {
         gameState->pickups.remove_and_swap(pickupIdx--);
+        gameState->player.exp++;
+        
+        if(gameState->player.exp >= 100)
+        {
+          // TODO: Level up
+          gameState->player.exp = 100;
+        }
+        
         continue;
       }
     }
@@ -516,4 +558,15 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     }
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		HANDLE DAMAGING AREAS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  
+  // Exp Bar
+  {
+    draw_sprite(SPRITE_EXP_BAR_LEFT, {4.0f, 16.0f}, {8.0f, 32.0f});
+    draw_sprite(SPRITE_EXP_BAR_MIDDLE, {input->screenSize.x / 2.0f, 16.0f}, 
+                {input->screenSize.x - 16.0f, 32.0f});
+    draw_sprite(SPRITE_EXP_BAR_RIGHT, {input->screenSize.x - 4.0f, 16.0f}, {8.0f, 32.0f});
+    
+    float barSizeX = (input->screenSize.x - 12.0f) * (float)gameState->player.exp / 100.0f;
+    draw_sprite(SPRITE_WHITE, {barSizeX / 2.0f + 6.0f, 16.0f}, {barSizeX, 20.0f},{.color = COLOR_BLUE});
+  }
 }

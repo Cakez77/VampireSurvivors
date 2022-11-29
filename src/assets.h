@@ -17,6 +17,10 @@ enum SpriteID
   SPRITE_HERO_KARATE_MAN,
   SPRITE_EFFECT_WHIP,
   SPRITE_CRYSTAL,
+  SPRITE_EXP_BAR_LEFT,
+  SPRITE_EXP_BAR_MIDDLE,
+  SPRITE_EXP_BAR_RIGHT,
+  SPRITE_EFFECT_GARLIC,
   
   SPRITE_COUNT,
 };
@@ -86,6 +90,42 @@ internal Sprite get_sprite(SpriteID spriteID)
       s.subSize = {16, 16};
       
       break;
+    }
+    
+    case SPRITE_EXP_BAR_LEFT:
+    {
+      s.atlasOffset = {0, 80};
+      s.size = {4, 16};
+      s.subSize = {4, 16};
+      
+      break; 
+    }
+    
+    case SPRITE_EXP_BAR_MIDDLE:
+    {
+      s.atlasOffset = {4, 80};
+      s.size = {8, 16};
+      s.subSize = {8, 16};
+      
+      break; 
+    }
+    
+    case SPRITE_EXP_BAR_RIGHT:
+    {
+      s.atlasOffset = {12, 80};
+      s.size = {4, 16};
+      s.subSize = {4, 16};
+      
+      break; 
+    }
+    
+    case SPRITE_EFFECT_GARLIC:
+    {
+      s.atlasOffset = {0, 96};
+      s.size = {80, 80};
+      s.subSize = {80, 80};
+      
+      break; 
     }
     
     default: 

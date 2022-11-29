@@ -23,11 +23,13 @@ struct Entity
   int hp = 100;
   int attack = 10;
   float attackTime;
+  float garlicHitTimer;
 };
 
 enum WeaponID
 {
   WEAPON_WHIP,
+  WEAPON_GARLIC,
   WEAPON_COUNT,
 };
 
@@ -67,6 +69,7 @@ struct Player
   
   int maxHP = 300;
   int hp = 300;
+  int exp;
   
   Array<Weapon, WEAPON_COUNT> weapons;
 };
