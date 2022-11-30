@@ -63,8 +63,8 @@ struct Player
   Vec2 pos;
   Circle collider ={{0.0f, 0.0f}, 12.0f};
   float speed = 400.0f;
-  float pickupTriggerRadius = 100.0f;
-  float pickupRadius = 40.0f;
+  float pickupTriggerRadius = 60.0f;
+  float pickupRadius = 20.0f;
   bool flipX;
   
   int maxHP = 300;

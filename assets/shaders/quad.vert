@@ -2,6 +2,7 @@
 // Output
 layout (location = 0) out vec4 color;
 layout (location = 1) out vec2 textureCoordsOut;
+layout (location = 2) out vec2 uvOut;
 
 // Input Uniforms
 uniform vec2 screenSize;
@@ -41,10 +42,10 @@ void main()
   color = materials[t.materialIdx].color;
 
   // Texture Coords, with flipping
-  float left;
-  float right;
-  float top;
-  float bottom;
+  int left;
+  int right;
+  int top;
+  int bottom;
   if(bool(t.renderOptions & RENDER_OPTION_FLIP_X))
   {
     left = t.atlasOffset.x + t.spriteSize.x;
@@ -74,7 +75,8 @@ void main()
     ivec2(left, bottom),
     ivec2(right, bottom)
   };
-  textureCoordsOut = textureCoords[gl_VertexID];
+  textureCoordsOut = vec2(textureCoords[gl_VertexID]);
+  uvOut = vec2(textureCoords[gl_VertexID]) / vec2(1024.0);
   
   gl_Position = vec4(vertices[gl_VertexID] * size + pos, 0.0, 1.0);
 }

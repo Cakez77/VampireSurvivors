@@ -63,6 +63,22 @@ internal bool has_hit_enemy(DamagingArea da, int enemyID)
   return hit;
 }
 
+internal void inflict_damage(Entity* e, int dmg)
+{
+  e->hp -= dmg;
+  
+  if(e->hp <= 0)
+  {
+    // Drop EXP Gem
+    {
+      Pickup pickup = {};
+      pickup.type = PICKUP_TYPE_EXP;
+      pickup.pos = e->pos;
+      gameState->pickups.add(pickup);
+    }
+  }
+}
+
 internal void add_damaging_area(SpriteID spriteID, Vec2 pos, Vec2 size, float duration)
 {
   DamagingArea da = {};
@@ -86,8 +102,7 @@ __declspec(dllexport) void init_game(GameState* gameStateIn, Input* inputIn,
   //player_add_weapon(WEAPON_WHIP);
   player_add_weapon(WEAPON_GARLIC);
   
-  gameState->player.pos.x = input->screenSize.x / 2;
-  gameState->player.pos.y = input->screenSize.y / 2;
+  gameState->player.pos = vec_2(input->screenSize) / 2.0f;
   gameState->playerScreenEdgeDist = length(vec_2(WORLD_SIZE - WORLD_SIZE / 2)) + 50.0f;
 }
 
@@ -107,7 +122,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
   }
   
   gameState->totalTime += dt;
-  gameState->spawnTimer += dt;
+  gameState->spawnTimer += dt / 1.0f;
   
   // Spawning System
   {
@@ -145,6 +160,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     
     float attackDelay = 0.5f;
     enemy->attackTime = min(enemy->attackTime + dt, attackDelay);
+    enemy->garlicHitTimer = max(enemy->garlicHitTimer - dt, 0.0f);
     
     // Check if colliding with player
     {
@@ -332,22 +348,19 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
               Circle enemyCollider = get_collider(*e);
               Circle garlicCollider = {gameState->player.pos, 100.0f};
               
-              if(point_in_circle(e->pos, garlicCollider))
+              if(circle_collision(enemyCollider, garlicCollider, 0))
               {
-                while(e->garlicHitTimer <= 0.0f)
+                if(e->garlicHitTimer <= 0.0f)
                 {
-                  e->hp -= 100;
+                  inflict_damage(e, 200);
                   e->garlicHitTimer += hitRate;
+                  
+                  if(e->hp <= 0)
+                  {
+                    gameState->enemies.remove_and_swap(enemyIdx--);
+                    continue;
+                  }
                 }
-                
-              }
-              
-              e->garlicHitTimer -= dt;
-              
-              if(e->hp <= 0)
-              {
-                gameState->enemies.remove_and_swap(enemyIdx--);
-                continue;
               }
             }
             
@@ -405,7 +418,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
             p->triggered = true;
             
             // @Note(tkap, 29/11/2022): Start by going away from the player, same effect as VS
-            p->vel = normalize(p->pos - gameState->player.pos) * 125;
+            p->vel = normalize(p->pos - gameState->player.pos) * 50;
           }
           if(p->triggered)
           {
@@ -530,29 +543,22 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
         if(rect_circle_collision(daCollider, enemyCollider))
         {
           // Damage 
-          enemy->hp -= 200;
+          inflict_damage(enemy, 200);
+          
           if(enemy->hp <= 0)
           {
-            // Drop EXP Gem
-            {
-              Pickup pickup = {};
-              pickup.type = PICKUP_TYPE_EXP;
-              pickup.pos = enemy->pos;
-              gameState->pickups.add(pickup);
-            }
-            
             gameState->enemies.remove_and_swap(enemyIdx--);
             continue;
           }
-          
-          // Push away
-          enemy->pushTime = 1.0f;
-          Vec2 pushDir = normalize(enemy->pos - da->pos);
-          enemy->pushDirection = pushDir * 10.0f;
-          
-          // Add to hit targets
-          da->hitEnemyIDs.add(enemy->ID);
         }
+        
+        // Push away
+        enemy->pushTime = 1.0f;
+        Vec2 pushDir = normalize(enemy->pos - da->pos);
+        enemy->pushDirection = pushDir * 10.0f;
+        
+        // Add to hit targets
+        da->hitEnemyIDs.add(enemy->ID);
       }
       
     }
@@ -566,7 +572,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
                 {input->screenSize.x - 16.0f, 32.0f});
     draw_sprite(SPRITE_EXP_BAR_RIGHT, {input->screenSize.x - 4.0f, 16.0f}, {8.0f, 32.0f});
     
-    float barSizeX = (input->screenSize.x - 12.0f) * (float)gameState->player.exp / 100.0f;
-    draw_sprite(SPRITE_WHITE, {barSizeX / 2.0f + 6.0f, 16.0f}, {barSizeX, 20.0f},{.color = COLOR_BLUE});
+    float barSizeX = (input->screenSize.x - 15.0f) * (float)gameState->player.exp / 100.0f;
+    draw_sprite(SPRITE_WHITE, {barSizeX / 2.0f + 6.0f, 15.0f}, {barSizeX, 18.0f},{.color = COLOR_BLUE});
   }
 }

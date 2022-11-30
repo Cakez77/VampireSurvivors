@@ -50,6 +50,8 @@ extern "C"
 #define GL_TEXTURE_WRAP_T                 0x2803
 #define GL_REPEAT                         0x2901
 #define GL_NEAREST                        0x2600
+#define GL_CLAMP_TO_EDGE                  0x812F
+#define GL_CLAMP_TO_BORDER                0x812D
 #define GL_LINEAR                         0x2601
 #define GL_LINEAR_MIPMAP_LINEAR           0x2703
 #define GL_LINEAR_MIPMAP_NEAREST          0x2701 

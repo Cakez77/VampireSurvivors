@@ -13,6 +13,9 @@ enum TextColor
 void platform_log(char *msg, TextColor color);
 void platform_print_error();
 char* platform_read_file(char *path, uint32_t *fileSize);
+unsigned long platform_write_file(char *path, char *buffer, uint32_t size, bool overwrite = true);
+bool platform_file_exists(char *path);
+void platform_delete_file(char *path);
 long long platform_last_edit_timestamp(char* path);
 
 char* platform_allocate_transient(uint32_t sizeInBytes);

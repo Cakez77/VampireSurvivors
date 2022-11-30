@@ -86,7 +86,7 @@ struct KeyState
 
 struct Input
 {
-  Vec2 screenSize;
+  IVec2 screenSize;
   Vec2 oldMousePos;
   Vec2 mousePosScreen;
   Vec2 relMouseScreen;

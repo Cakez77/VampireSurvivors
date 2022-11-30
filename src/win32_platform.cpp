@@ -50,8 +50,8 @@ LRESULT CALLBACK window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
       RECT r;
       GetClientRect(window, &r);
       
-      input->screenSize.x = (float)(r.right - r.left);
-      input->screenSize.y = (float)(r.bottom - r.top);
+      input->screenSize.x = (r.right - r.left);
+      input->screenSize.y = (r.bottom - r.top);
       
       renderer_resize();
       
@@ -245,7 +245,7 @@ int main()
       {
         lastEditDLLTimestamp = DLLTimestamp;
         printf("New DLL found\n");
-      
+        
         if(gameDLL)
         {
           BOOL freeResult = FreeLibrary(gameDLL);
@@ -307,6 +307,37 @@ int main()
     }
     
     platform_update_window();
+    
+    if(is_key_pressed(KEY_K))
+    {
+      if(platform_file_exists("gameState.bin"))
+      {
+        platform_delete_file("gameState.bin");
+      }
+      platform_write_file("gameState.bin", (char*)gameState, sizeof(GameState), true);
+    }
+    
+    if(is_key_pressed(KEY_L))
+    {
+      uint32_t fileSize;
+      char* buffer = platform_read_file("gameState.bin", &fileSize);
+      
+      if(buffer)
+      {
+        if(fileSize == sizeof(GameState))
+        {
+          memcpy(gameState, buffer, fileSize);
+        }
+        else
+        {
+          CAKEZ_ASSERT(0, "GameState Size changed!")
+        }
+      }
+      else
+      {
+        CAKEZ_ASSERT(0, "Failed to read GameState");
+      }
+    }
     
     update_game(gameState, input, renderData, dt);
     for(int key_i = 0; key_i < KEY_COUNT; key_i++)
@@ -440,6 +471,60 @@ char *platform_read_file(char *path, uint32_t *fileSize)
   }
   
   return buffer;
+}
+
+unsigned long platform_write_file(char *path,
+                                  char *buffer,
+                                  uint32_t size,
+                                  bool overwrite)
+{
+  DWORD bytesWritten = 0;
+  
+  HANDLE file = CreateFile(path,
+                           overwrite ? GENERIC_WRITE : FILE_APPEND_DATA,
+                           FILE_SHARE_WRITE, 0, OPEN_ALWAYS, 0, 0);
+  
+  if (file != INVALID_HANDLE_VALUE)
+  {
+    if (!overwrite)
+    {
+      DWORD result = SetFilePointer(file, 0, 0, FILE_END);
+      if (result == INVALID_SET_FILE_POINTER)
+      {
+        CAKEZ_WARN("Failed to set file pointer to the end");
+      }
+    }
+    
+    BOOL result = WriteFile(file, buffer, size, &bytesWritten, 0);
+    if (result && size == bytesWritten)
+    {
+      // Success
+    }
+    else
+    {
+      CAKEZ_WARN("Failed writing file %s", path);
+    }
+    CloseHandle(file);
+  }
+  else
+  {
+    CAKEZ_WARN("Failed opening file %s", path);
+  }
+  
+  return bytesWritten;
+}
+
+bool platform_file_exists(char *path)
+{
+  DWORD attributes = GetFileAttributes(path);
+  
+  return (attributes != INVALID_FILE_ATTRIBUTES &&
+          !(attributes & FILE_ATTRIBUTE_DIRECTORY));
+}
+
+void platform_delete_file(char *path)
+{
+  CAKEZ_ASSERT(DeleteFileA(path) != 0, "Failed deleting file: %s", path);
 }
 
 long long platform_last_edit_timestamp(char* path)

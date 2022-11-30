@@ -24,11 +24,16 @@ void test()
 
 // @Note(tkap, 29/11/2022): Better to have a bad assert than no assert :smile:
 #ifdef DEBUG
-  #include <stdlib.h>
-  #include <stdio.h>
-  #define assert(cond) if(!(cond)) { printf("ASSERT FAILED AT %s (%i)\n", __FILE__, __LINE__); exit(1); }
+#include <stdlib.h>
+#include <stdio.h>
+#define assert(cond) if(!(cond))                              \
+{                                                           \
+__debugbreak();                                           \
+printf("ASSERT FAILED AT %s (%i)\n", __FILE__, __LINE__); \
+exit(1);                                                  \
+}
 #else
-  #define assert(cond)
+#define assert(cond)
 #endif // DEBUG
 
 template <typename T, int N>
