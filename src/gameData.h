@@ -99,8 +99,17 @@ struct Pickup
   Vec2 vel;
 };
 
+enum GameStateID
+{
+  GAME_STATE_LEVEL_UP,
+  GAME_STATE_RUNNING_LEVEL,
+  
+  GAME_STATE_COUNT
+};
+
 struct GameState
 {
+  GameStateID state;
   bool initialized = false;
   
   int entityIDCounter = 1;

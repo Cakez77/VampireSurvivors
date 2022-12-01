@@ -2,7 +2,6 @@
 // Output
 layout (location = 0) out vec4 color;
 layout (location = 1) out vec2 textureCoordsOut;
-layout (location = 2) out vec2 uvOut;
 
 // Input Uniforms
 uniform vec2 screenSize;
@@ -36,47 +35,50 @@ void main()
 
   // Inverts the Y- Coordinate, so that y = 0 is on the top
   t.pos.y = -t.pos.y + screenSize.y;
+  // This erases wobblines but introduces micro stutter
+  t.pos.x = float(int(t.pos.x));
+  t.pos.y = float(int(t.pos.y));
   vec2 pos = t.pos * (2.0 / screenSize) - 1.0;
   vec2 size = t.size / screenSize;
+  gl_Position = vec4(vertices[gl_VertexID] * size + pos, 0.0, 1.0);
 
   color = materials[t.materialIdx].color;
 
   // Texture Coords, with flipping
-  int left;
-  int right;
-  int top;
-  int bottom;
+  float left;
+  float right;
+  float top;
+  float bottom;
+  
+  // 0.6 because I HATE OPENGL IT'S SHIT!
   if(bool(t.renderOptions & RENDER_OPTION_FLIP_X))
   {
-    left = t.atlasOffset.x + t.spriteSize.x;
-    right = t.atlasOffset.x;
+    left = float(t.atlasOffset.x + t.spriteSize.x) - 0.6;
+    right = float(t.atlasOffset.x) + 0.6;
   }
   else
   {
-    left = t.atlasOffset.x;
-    right = t.atlasOffset.x + t.spriteSize.x;
+    left = float(t.atlasOffset.x) + 0.6;
+    right = float(t.atlasOffset.x + t.spriteSize.x) - 0.6;
   }
   if(bool(t.renderOptions & RENDER_OPTION_FLIP_Y))
   {
-    top = t.atlasOffset.y + t.spriteSize.y;
-    bottom = t.atlasOffset.y;
+    top = float(t.atlasOffset.y + t.spriteSize.y) - 0.6;
+    bottom = float(t.atlasOffset.y) + 0.6;
   }
   else
   {
-    top = t.atlasOffset.y;
-    bottom = t.atlasOffset.y + t.spriteSize.y;
+    top = float(t.atlasOffset.y) + 0.6;
+    bottom = float(t.atlasOffset.y + t.spriteSize.y) - 0.6;
   }
-  ivec2 textureCoords[6] = 
+  vec2 textureCoords[6] = 
   {
-    ivec2(left, top),                                 
-    ivec2(left, bottom),
-    ivec2(right, top),
-    ivec2(right, top),
-    ivec2(left, bottom),
-    ivec2(right, bottom)
+    vec2(left, top),                                 
+    vec2(left, bottom),
+    vec2(right, top),
+    vec2(right, top),
+    vec2(left, bottom),
+    vec2(right, bottom)
   };
   textureCoordsOut = vec2(textureCoords[gl_VertexID]);
-  uvOut = vec2(textureCoords[gl_VertexID]) / vec2(1024.0);
-  
-  gl_Position = vec4(vertices[gl_VertexID] * size + pos, 0.0, 1.0);
 }

@@ -71,11 +71,23 @@ LRESULT CALLBACK window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
           input->keys[wParam].isDown = isDown;
         }
       }
-    } break;
-    
-    default:
+      
+      break;
+    }
+    case WM_LBUTTONDOWN:
+    case WM_RBUTTONDOWN:
+    case WM_MBUTTONDOWN:
+    case WM_LBUTTONUP:
+    case WM_RBUTTONUP:
+    case WM_MBUTTONUP:
     {
-      result = DefWindowProcA(hwnd, msg, wParam, lParam);
+      bool isDown = (msg == WM_LBUTTONDOWN || msg == WM_RBUTTONDOWN || msg == WM_MBUTTONDOWN)
+        ? true: false;
+      
+      input->keys[wParam].isDown = isDown;
+      input->keys[wParam].halfTransitionCount++;
+      
+      break;
     }
     
     case WM_MOUSEMOVE:
@@ -92,7 +104,10 @@ LRESULT CALLBACK window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
       break;
     }
     
-    
+    default:
+    {
+      result = DefWindowProcA(hwnd, msg, wParam, lParam);
+    }
   }
   
   return result;

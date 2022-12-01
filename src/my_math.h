@@ -199,6 +199,14 @@ internal bool point_in_circle(Vec2 point, Circle c)
   return lengthSquared <= c.radius * c.radius;
 }
 
+internal bool point_in_rect(Vec2 point, Rect rect)
+{
+  return (point.x >= rect.pos.x &&
+          point.x <= rect.pos.x + rect.size.y &&
+          point.y >= rect.pos.y &&
+          point.y <= rect.pos.y + rect.size.y);
+}
+
 internal bool circle_collision(Circle a, Circle b, float* pushout)
 {
   bool result = false;

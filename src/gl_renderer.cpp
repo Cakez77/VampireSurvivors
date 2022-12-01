@@ -174,8 +174,6 @@ internal bool gl_init(void* window, RenderData* renderData)
     DestroyWindow(fake_window);
   }
   
-  
-  
   // Actual OpenGL Initialization
   {
     HGLRC gldc = 0;
@@ -350,10 +348,10 @@ internal bool gl_init(void* window, RenderData* renderData)
       glBindTexture(GL_TEXTURE_2D, glContext.textureAtlas01.ID);
       
       // set the texture wrapping/filtering options (on the currently bound texture object)
-      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
-      //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       
       // load and generate the texture
       int width = 0, height = 0;

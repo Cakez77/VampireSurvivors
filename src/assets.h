@@ -21,6 +21,8 @@ enum SpriteID
   SPRITE_EXP_BAR_MIDDLE,
   SPRITE_EXP_BAR_RIGHT,
   SPRITE_EFFECT_GARLIC,
+  SPRITE_ICON_WHIP,
+  SPRITE_ICON_CIRCLE,
   
   SPRITE_COUNT,
 };
@@ -124,6 +126,24 @@ internal Sprite get_sprite(SpriteID spriteID)
       s.atlasOffset = {0, 96};
       s.size = {80, 80};
       s.subSize = {80, 80};
+      
+      break; 
+    }
+    
+    case SPRITE_ICON_WHIP:
+    {
+      s.atlasOffset = {16, 80};
+      s.size = {16, 16};
+      s.subSize = {16, 16};
+      
+      break; 
+    }
+    
+    case SPRITE_ICON_CIRCLE:
+    {
+      s.atlasOffset = {32, 80};
+      s.size = {16, 16};
+      s.subSize = {16, 16};
       
       break; 
     }

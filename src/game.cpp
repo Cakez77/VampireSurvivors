@@ -90,6 +90,13 @@ internal void add_damaging_area(SpriteID spriteID, Vec2 pos, Vec2 size, float du
   gameState->damagingAreas.add(da);
 }
 
+
+//#############################################################
+//                  Define funcions
+//#############################################################
+internal void update_level(float dt);
+
+
 __declspec(dllexport) void init_game(GameState* gameStateIn, Input* inputIn,
                                      RenderData* renderDataIn)
 {
@@ -99,11 +106,13 @@ __declspec(dllexport) void init_game(GameState* gameStateIn, Input* inputIn,
   
   *gameState = {};
   
-  //player_add_weapon(WEAPON_WHIP);
+  player_add_weapon(WEAPON_WHIP);
   player_add_weapon(WEAPON_GARLIC);
   
   gameState->player.pos = vec_2(input->screenSize) / 2.0f;
   gameState->playerScreenEdgeDist = length(vec_2(WORLD_SIZE - WORLD_SIZE / 2)) + 50.0f;
+  
+  gameState->state = GAME_STATE_RUNNING_LEVEL;
 }
 
 __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn, 
@@ -121,6 +130,72 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     }
   }
   
+  switch(gameState->state)
+  {
+    case GAME_STATE_LEVEL_UP:
+    {
+      Vec2 levelUpMenuSize = {500.0f, 600.0f};
+      Vec2 levelUpMenuPos = vec_2(input->screenSize) / 2.0f;
+      draw_quad(levelUpMenuPos, levelUpMenuSize);
+      
+      Vec2 contentPos = levelUpMenuPos + Vec2{0.0f, -100.0f};
+      Vec2 iconSize = vec_2(64.0f);
+      
+      // Whip
+      Rect whipRect = {contentPos - iconSize / 2.0f, iconSize};
+      draw_sprite(SPRITE_ICON_WHIP, contentPos, iconSize);
+      contentPos.y += 70.0f;
+      
+      // AOE
+      Rect aoeRect = {contentPos - iconSize / 2.0f, iconSize};
+      draw_sprite(SPRITE_ICON_CIRCLE, contentPos, iconSize);
+      contentPos.y += 70.0f;
+      
+      if(is_key_pressed(KEY_LEFT_MOUSE))
+      {
+        WeaponID weaponID = WEAPON_COUNT;
+        
+        if(point_in_rect(input->mousePosScreen, whipRect))
+        {
+          weaponID = WEAPON_WHIP;
+        }
+        
+        if(point_in_rect(input->mousePosScreen, aoeRect))
+        {
+          weaponID = WEAPON_GARLIC;
+        }
+        
+        if(weaponID < WEAPON_COUNT)
+        {
+          for(int weaponIdx = 0; weaponIdx < gameState->player.weapons.count; weaponIdx++)
+          {
+            Weapon* w = &gameState->player.weapons[weaponIdx];
+            
+            if(w->ID == weaponID)
+            {
+              w->level++;
+              gameState->state = GAME_STATE_RUNNING_LEVEL;
+            }
+          }
+        }
+      }
+      
+      break;
+    }
+    
+    case GAME_STATE_RUNNING_LEVEL:
+    {
+      update_level(dt);
+      
+      break;
+    }
+  }
+  
+}
+
+
+internal void update_level(float dt)
+{
   gameState->totalTime += dt;
   gameState->spawnTimer += dt / 1.0f;
   
@@ -346,6 +421,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
             {
               Entity* e = &gameState->enemies[enemyIdx];
               Circle enemyCollider = get_collider(*e);
+              
               Circle garlicCollider = {gameState->player.pos, 100.0f};
               
               if(circle_collision(enemyCollider, garlicCollider, 0))
@@ -418,7 +494,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
             p->triggered = true;
             
             // @Note(tkap, 29/11/2022): Start by going away from the player, same effect as VS
-            p->vel = normalize(p->pos - gameState->player.pos) * 50;
+            p->vel = normalize(p->pos - gameState->player.pos) * 70;
           }
           if(p->triggered)
           {
@@ -446,10 +522,11 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
         if(gameState->player.exp >= 100)
         {
           // TODO: Level up
-          gameState->player.exp = 100;
+          gameState->player.exp = 0;
+          gameState->state = GAME_STATE_LEVEL_UP;
         }
         
-        continue;
+       continue;
       }
     }
   }
@@ -550,15 +627,15 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
             gameState->enemies.remove_and_swap(enemyIdx--);
             continue;
           }
+          
+          // Push away
+          enemy->pushTime = 1.0f;
+          Vec2 pushDir = normalize(enemy->pos - da->pos);
+          enemy->pushDirection = pushDir * 10.0f;
+          
+          // Add to hit targets
+          da->hitEnemyIDs.add(enemy->ID);
         }
-        
-        // Push away
-        enemy->pushTime = 1.0f;
-        Vec2 pushDir = normalize(enemy->pos - da->pos);
-        enemy->pushDirection = pushDir * 10.0f;
-        
-        // Add to hit targets
-        da->hitEnemyIDs.add(enemy->ID);
       }
       
     }
