@@ -22,6 +22,7 @@ struct GLContext
   uint32_t materialSBOID;
   uint32_t transformSBOID;
   Texture textureAtlas01;
+  uint32_t fontAtlasID;
   
   RenderData* renderData;
 };
@@ -100,6 +101,109 @@ internal void init_open_gl_functions()
   init_gl_func(glDrawElementsInstanced);
   init_gl_func(glGenerateMipmap);
   init_gl_func(glGetProgramInfoLog);
+}
+
+
+// Freetype uses internal
+#undef internal
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#define internal static
+
+internal bool init_font(int fontSize)
+{
+  FT_Library ft;
+  
+  if(FT_Init_FreeType(&ft) != 0)
+  {
+    CAKEZ_ASSERT(0, "Failed to init Freetype");
+    return false;
+  }
+  
+  FT_Face face;
+  if(FT_New_Face(ft, "assets/fonts/dogica.ttf", 0, &face) != 0)
+  {
+    CAKEZ_ASSERT(0, "Failed to load TTF File!");
+    return false;
+  }
+  
+  if(FT_Set_Pixel_Sizes(face, 0, fontSize) != 0)
+  {
+    CAKEZ_ASSERT(0, "Failed to set Font Size!");
+    return false;
+  }
+  
+  int currentRowIdx = 0, currentColIdx = 0;
+  char bitmap[512][512] = {};
+  
+  int width, height, xOff, yOff, advance;
+  for(char c = 32; c < 127; c++)
+  {
+    int gi = FT_Get_Char_Index(face, c);
+    if(gi == 0)
+    {
+      CAKEZ_ASSERT(0, "Failed to load character for TTF!");
+      return false;
+    }
+    
+    // Generates Bitmap
+    FT_Load_Glyph(face, gi, FT_LOAD_DEFAULT);
+    FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
+    
+    unsigned char* glyphBitmap = face->glyph->bitmap.buffer;
+    width = (int)face->glyph->bitmap.width;
+    height = (int)face->glyph->bitmap.rows;
+    advance = face->glyph->metrics.horiAdvance / 64;
+    xOff = (advance - face->glyph->metrics.width / 64) / 2;
+    yOff = (face->bbox.yMax - face->glyph->metrics.horiBearingY) / 64;
+    
+    if(currentColIdx + width >= 512)
+    {
+      currentRowIdx += fontSize;
+      currentColIdx = 0;
+    }
+    
+    // Write Glyph to bitmap
+    for(int y = 0; y < height; y++)
+    {
+      for(int x = 0; x < width; x++)
+      {
+        unsigned char glyphC = glyphBitmap[y * width + x];
+        
+        bitmap[currentRowIdx + y][currentColIdx + x] = glyphC;
+      }
+    }
+    
+    Glyph* g = &glContext.renderData->glyphs[c];
+    g->textureOffset = {currentColIdx, currentRowIdx};
+    g->spriteSize = {width, height};
+    g->offset = {xOff, yOff};
+    g->advance = {advance, fontSize};
+    
+    currentColIdx += width + 2;
+  }
+  
+  glContext.renderData->glyphs['\n'].advance = {0, fontSize};
+  
+  FT_Done_FreeType(ft);
+  
+  // Font Atlas
+  {
+    glGenTextures(1, &glContext.fontAtlasID);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, glContext.fontAtlasID);
+    
+    // set the texture wrapping/filtering options (on the currently bound texture object)
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_R8, 512, 512, 0, GL_RED, GL_UNSIGNED_BYTE, bitmap);
+    glGenerateMipmap(GL_TEXTURE_2D);
+  }
+  
+  return true;
 }
 
 internal bool gl_init(void* window, RenderData* renderData)
@@ -258,43 +362,71 @@ internal bool gl_init(void* window, RenderData* renderData)
   
   // Create Programs
   {
+    uint32_t vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
+    uint32_t fragShaderID = glCreateShader(GL_FRAGMENT_SHADER);
+    
     uint32_t fileSize = 0;
     char* shaderHeader = platform_read_file("src/shader_header.h", &fileSize);
     char* vertexShader = platform_read_file("assets/shaders/quad.vert", &fileSize);
+    char* fragShader = platform_read_file("assets/shaders/quad.frag", &fileSize);
     
     CAKEZ_ASSERT(shaderHeader, "Failed to allocate Space for Shader Header");
     CAKEZ_ASSERT(vertexShader, "Failed to allocate Space for Vertex Shader");
+    CAKEZ_ASSERT(fragShader, "Failed to allocate Space for Frag Shader");
     
-    uint32_t vertexShaderID = glCreateShader(GL_VERTEX_SHADER);
-    char* vertexSources[] = 
+    // Vertex Shader
     {
-      "#version 430 core\n",
-      shaderHeader,
-      vertexShader
-    };
-    
-    glShaderSource(vertexShaderID, ArraySize(vertexSources), vertexSources, 0);
-    glCompileShader(vertexShaderID);
-    
-    fileSize = 0;
-    char* fragShader = platform_read_file("assets/shaders/quad.frag", &fileSize);
-    uint32_t fragShaderID = glCreateShader(GL_FRAGMENT_SHADER);
-    glShaderSource(fragShaderID, 1, &fragShader, 0);
-    glCompileShader(fragShaderID);
-    
-    // Validate if Shaders work
-    {
-      int programSuccess;
-      char programInfoLog[512];
-      glGetShaderiv(fragShaderID, GL_COMPILE_STATUS, &programSuccess);
-      
-      if(!programSuccess)
+      char* vertexSources[] = 
       {
-        glGetShaderInfoLog(fragShaderID, 512, 0, programInfoLog);
+        "#version 430 core\n",
+        shaderHeader,
+        vertexShader
+      };
+      
+      glShaderSource(vertexShaderID, ArraySize(vertexSources), vertexSources, 0);
+      glCompileShader(vertexShaderID);
+      
+      // Validate if Shaders work
+      {
+        int shaderSuccess;
+        char shaderLog[1024];
+        glGetShaderiv(vertexShaderID, GL_COMPILE_STATUS, &shaderSuccess);
         
-        CAKEZ_ASSERT(0, "Failed to compile shader program: %s", programInfoLog);
+        if(!shaderSuccess)
+        {
+          glGetShaderInfoLog(vertexShaderID, 1024, 0, shaderLog);
+          CAKEZ_ASSERT(0, "Failed to compile vertex shader: %s", shaderLog);
+          
+          return false;
+        }
+      }
+    }
+    
+    // Fragment Shader
+    {
+      char* fragSources[] = 
+      {
+        "#version 430 core\n",
+        shaderHeader,
+        fragShader
+      };
+      
+      glShaderSource(fragShaderID, ArraySize(fragSources), fragSources, 0);
+      glCompileShader(fragShaderID);
+      
+      // Validate if Shaders work
+      {
+        int shaderSuccess;
+        char shaderLog[1024];
+        glGetShaderiv(fragShaderID, GL_COMPILE_STATUS, &shaderSuccess);
         
-        return 0;
+        if(!shaderSuccess)
+        {
+          glGetShaderInfoLog(fragShaderID, 1024, 0, shaderLog);
+          CAKEZ_ASSERT(0, "Failed to compile frag shader: %s", shaderLog);
+          
+          return false;
+        }
       }
     }
     
@@ -306,7 +438,7 @@ internal bool gl_init(void* window, RenderData* renderData)
     glDeleteShader(vertexShaderID);
     glDeleteShader(fragShaderID);
     
-    // Validate if Shaders work
+    // Validate if program works
     {
       int programSuccess;
       char programInfoLog[512];
@@ -345,6 +477,7 @@ internal bool gl_init(void* window, RenderData* renderData)
     // 
     {
       glGenTextures(1, &glContext.textureAtlas01.ID);
+      glActiveTexture(GL_TEXTURE0);
       glBindTexture(GL_TEXTURE_2D, glContext.textureAtlas01.ID);
       
       // set the texture wrapping/filtering options (on the currently bound texture object)
@@ -368,6 +501,8 @@ internal bool gl_init(void* window, RenderData* renderData)
         CAKEZ_ASSERT(0, "Failed to get data for TextureID: %d", TEXTURE_ATLAS_01);
       }
     }
+    
+    init_font(24);
     
     glUseProgram(glContext.programID);
     
@@ -438,11 +573,26 @@ internal bool gl_render()
                    sizeof(Transform) * glContext.renderData->transforms.count,
                    glContext.renderData->transforms.elements, GL_STATIC_DRAW);
       
+      glDrawArraysInstanced(GL_TRIANGLES, 0, 6, glContext.renderData->transforms.count);
+      glContext.renderData->transforms.count = 0;
+    }
+    
+    // Copy transparent Transforms to GPU
+    {
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      
+      glBufferData(GL_SHADER_STORAGE_BUFFER, 
+                   sizeof(Transform) * glContext.renderData->transpTransforms.count,
+                   glContext.renderData->transpTransforms.elements, GL_STATIC_DRAW);
+      
       //Undinds the buffer after usage (inactive)
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
       
-      glDrawArraysInstanced(GL_TRIANGLES, 0, 6, glContext.renderData->transforms.count);
-      glContext.renderData->transforms.count = 0;
+      glDrawArraysInstanced(GL_TRIANGLES, 0, 6, glContext.renderData->transpTransforms.count);
+      glContext.renderData->transpTransforms.count = 0;
+      
+      glDisable(GL_BLEND);
     }
     
     SwapBuffers(glContext.dc);

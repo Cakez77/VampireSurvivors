@@ -15,6 +15,7 @@ typedef int RenderOptions;
 
 #define RENDER_OPTION_FLIP_X BIT(0)
 #define RENDER_OPTION_FLIP_Y BIT(1)
+#define RENDER_OPTION_FONT BIT(2)
 
 
 struct Transform

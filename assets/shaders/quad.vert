@@ -1,7 +1,8 @@
 
 // Output
-layout (location = 0) out vec4 color;
-layout (location = 1) out vec2 textureCoordsOut;
+layout (location = 0) out int renderOptions;
+layout (location = 1) out vec4 color;
+layout (location = 2) out vec2 textureCoordsOut;
 
 // Input Uniforms
 uniform vec2 screenSize;
@@ -19,28 +20,34 @@ layout(std430, binding = 1) buffer MaterialSBO
 
 void main()
 {
-  // From -0.5 to 0.5 -> 1.0 -> size is 1 unit length, Counter Clockwise
-  float v_size = 1.0;
-  vec2 vertices[6] = 
-  {
-    vec2(-v_size,  v_size), // Top Left
-    vec2(-v_size, -v_size), // Bottom Left
-    vec2( v_size,  v_size), // Top Right
-    vec2( v_size,  v_size), // Top Right
-    vec2(-v_size, -v_size), // Bottom Left
-    vec2( v_size, -v_size)  // Bottom Right
-  };
-
   Transform t = transforms[gl_InstanceID];
 
+  // If not drawing font, then we align to center
+  if(!bool(t.renderOptions & RENDER_OPTION_FONT))
+  {
+    t.pos -= t.size / 2.0;
+  }
+  renderOptions = t.renderOptions;
+
   // Inverts the Y- Coordinate, so that y = 0 is on the top
-  t.pos.y = -t.pos.y + screenSize.y;
-  // This erases wobblines but introduces micro stutter
-  t.pos.x = float(int(t.pos.x));
-  t.pos.y = float(int(t.pos.y));
-  vec2 pos = t.pos * (2.0 / screenSize) - 1.0;
-  vec2 size = t.size / screenSize;
-  gl_Position = vec4(vertices[gl_VertexID] * size + pos, 0.0, 1.0);
+
+  vec2 vertices[6] = 
+  {
+    t.pos,                             // Top Left
+    vec2(t.pos + vec2(0.0, t.size.y)), // Bottom Left
+    vec2(t.pos + vec2(t.size.x, 0.0)), // Top Right
+    vec2(t.pos + vec2(t.size.x, 0.0)), // Top Right
+    vec2(t.pos + vec2(0.0, t.size.y)), // Bottom Left
+    t.pos + t.size                     // Bottom Right
+  };
+
+  // Normalize Position
+  {
+    vec2 vertexPos = vertices[gl_VertexID];
+    vertexPos.y = -vertexPos.y + screenSize.y;
+    vertexPos = 2.0 * (vertexPos / screenSize) - 1.0;
+    gl_Position = vec4(vertexPos, 0.0, 1.0);
+  }
 
   color = materials[t.materialIdx].color;
 
@@ -49,27 +56,33 @@ void main()
   float right;
   float top;
   float bottom;
+
+  float coordOffset = 0.6;
+  if(bool(t.renderOptions & RENDER_OPTION_FONT))
+  {
+    coordOffset = 0.5;
+  }
   
   // 0.6 because I HATE OPENGL IT'S SHIT!
   if(bool(t.renderOptions & RENDER_OPTION_FLIP_X))
   {
-    left = float(t.atlasOffset.x + t.spriteSize.x) - 0.6;
-    right = float(t.atlasOffset.x) + 0.6;
+    left = float(t.atlasOffset.x + t.spriteSize.x) - coordOffset;
+    right = float(t.atlasOffset.x) + coordOffset;
   }
   else
   {
-    left = float(t.atlasOffset.x) + 0.6;
-    right = float(t.atlasOffset.x + t.spriteSize.x) - 0.6;
+    left = float(t.atlasOffset.x) + coordOffset;
+    right = float(t.atlasOffset.x + t.spriteSize.x) - coordOffset;
   }
   if(bool(t.renderOptions & RENDER_OPTION_FLIP_Y))
   {
-    top = float(t.atlasOffset.y + t.spriteSize.y) - 0.6;
-    bottom = float(t.atlasOffset.y) + 0.6;
+    top = float(t.atlasOffset.y + t.spriteSize.y) - coordOffset;
+    bottom = float(t.atlasOffset.y) + coordOffset;
   }
   else
   {
-    top = float(t.atlasOffset.y) + 0.6;
-    bottom = float(t.atlasOffset.y + t.spriteSize.y) - 0.6;
+    top = float(t.atlasOffset.y) + coordOffset;
+    bottom = float(t.atlasOffset.y + t.spriteSize.y) - coordOffset;
   }
   vec2 textureCoords[6] = 
   {

@@ -130,6 +130,10 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     }
   }
   
+  draw_text("Test", {100.0f, 100.0f}, COLOR_RED);
+  draw_quad({300.0f, 500.0f}, {100.0f, 100.0f});
+  draw_sliced_sprite(SPRITE_SLICED_MENU_01, {300.0f, 500.0f}, {100.0f, 100.0f});
+  
   switch(gameState->state)
   {
     case GAME_STATE_LEVEL_UP:
@@ -201,7 +205,7 @@ internal void update_level(float dt)
   
   // Spawning System
   {
-    float spawnRate = 0.08f;
+    float spawnRate = 8.0f;
     while(gameState->spawnTimer > spawnRate)
     {
       if(gameState->enemies.count < MAX_ENEMIES)
@@ -526,7 +530,7 @@ internal void update_level(float dt)
           gameState->state = GAME_STATE_LEVEL_UP;
         }
         
-       continue;
+        continue;
       }
     }
   }

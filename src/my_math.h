@@ -47,6 +47,13 @@ internal Vec2 operator+(Vec2 a, Vec2 other)
     a.y + other.y};
 }
 
+internal Vec2 operator+(Vec2 a, float scalar)
+{
+  return Vec2{
+    a.x + scalar,
+    a.y + scalar};
+}
+
 internal Vec2& operator+=(Vec2& a, Vec2 b)
 {
   a = a + b;
@@ -104,6 +111,13 @@ internal Vec2 vec_2(float val)
   return {val, val};
 }
 
+internal IVec2 operator+(IVec2 a, IVec2 other)
+{
+  return IVec2{
+    a.x + other.x,
+    a.y + other.y};
+}
+
 internal IVec2 operator-(IVec2 a, IVec2 other)
 {
   return IVec2{
@@ -123,6 +137,11 @@ internal IVec2 operator/(IVec2 a, int scalar)
   return IVec2{
     a.x / scalar,
     a.y / scalar};
+}
+
+internal IVec2 ivec_2(int val)
+{
+  return {val, val};
 }
 
 internal bool operator==(Vec4 a, Vec4 b)

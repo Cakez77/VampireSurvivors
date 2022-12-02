@@ -7,6 +7,11 @@ internal void add_transform(Transform t = {})
   renderData->transforms.add(t);
 }
 
+internal void add_transparent_transform(Transform t = {})
+{
+  renderData->transpTransforms.add(t);
+}
+
 internal int get_material_idx(Vec4 color)
 {
   int idx = 0;
@@ -62,6 +67,84 @@ void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 size, DrawData drawData)
   draw_transform(drawData);
 }
 
+void draw_sliced_sprite(SpriteID spriteID, Vec2 pos, Vec2 size, DrawData drawData)
+{
+  Sprite s = get_sprite(spriteID);
+  float scale = 2.0f;
+  float edgeMiddle = scale * 2.5f;
+  float sizeX = size.x < 10.0f * scale? 1.0f: float(int(size.x - 10.0f * scale));
+  float sizeY = size.y < 10.0f * scale? 1.0f: float(int(size.y - 10.0f * scale));
+  
+  Transform t = {};
+  t.renderOptions = drawData.renderOptions;
+  t.materialIdx = get_material_idx(drawData.color);
+  
+  
+  // Draw Top Left 5x5
+  Vec2 topLeft = pos - size / 2.0f + edgeMiddle;
+  t.pos = topLeft;
+  t.size = vec_2(5.0f * scale);
+  t.atlasOffset = s.atlasOffset;
+  t.spriteSize = ivec_2(5);
+  add_transform(t);
+  
+  // Draw Top Middle ...x5
+  t.pos = topLeft + Vec2{8.0f + sizeX / 2.0f};
+  t.size = Vec2{sizeX, 10.0f};
+  t.atlasOffset = s.atlasOffset + IVec2{5};
+  t.spriteSize = {6, 5};
+  add_transform(t);
+  
+  // Draw Top Right  5x5
+  t.pos = topLeft + Vec2{15.0f + sizeX};
+  t.size = vec_2(5.0f * scale);
+  t.atlasOffset = s.atlasOffset + IVec2{10};
+  t.spriteSize = ivec_2(5);
+  add_transform(t);
+  
+  // Draw Middle Left
+  t.pos = topLeft + Vec2{0.0f, 10.0f};
+  t.size = {10.0f, 12.0f};
+  t.atlasOffset = s.atlasOffset + IVec2{0, 5};
+  t.spriteSize = {5, 6};
+  //add_transform(t);
+  
+  // Draw Middle Middle
+  t.pos = topLeft + vec_2(10.0f);
+  t.size = {sizeX, sizeY};
+  t.atlasOffset = s.atlasOffset + IVec2{5, 5};
+  t.spriteSize = ivec_2(6);
+  //add_transform(t);
+  
+  // Draw Middle Right
+  t.pos = topLeft + Vec2{10.0f + sizeX / 2.0f, 10.0f};
+  t.size = {12.0f, sizeY};
+  t.atlasOffset = s.atlasOffset + IVec2{11, 5};
+  t.spriteSize = {5, 6};
+  //add_transform(t);
+  
+  // Draw Bottom Left
+  t.pos = topLeft + Vec2{0.0f, 10.0f + sizeY / 2.0f};
+  t.size = vec_2(10.0f);
+  t.atlasOffset = s.atlasOffset + IVec2{0, 11};
+  t.spriteSize = ivec_2(5);
+  //add_transform(t);
+  
+  // Draw Bottom Middle
+  t.pos = topLeft + Vec2{10.0f, 10.0f + sizeY / 2.0f};
+  t.size = Vec2{10.0f + sizeX, 10.0f};
+  t.atlasOffset = s.atlasOffset + IVec2{5, 11};
+  t.spriteSize = {6, 5};
+  //add_transform(t);
+  
+  // Draw Bottom Right
+  t.pos = topLeft + Vec2{10.0f + sizeX / 2.0f, 10.0f + sizeY / 2.0f};
+  t.size = vec_2(10.0f);
+  t.atlasOffset = s.atlasOffset + IVec2{11, 11};
+  t.spriteSize = {5, 5};
+  //add_transform(t);
+}
+
 void draw_line(Vec2 a, Vec2 b, Vec4 color)
 {
   // TODO: Optimize this, use angle, rotation in shader
@@ -108,4 +191,38 @@ void draw_box(Vec2 pos, Vec2 size, Vec4 color, float lineThickness)
   // Bottom Side
   draw_quad(pos + Vec2{0.0f, (size.y - lineThickness) / 2.0f},
             {size.x, lineThickness}, {.color = color});
+}
+
+void draw_text(char* text, Vec2 pos, Vec4 color, RenderOptions renderOptions)
+{
+  if(!text)
+  {
+    return;
+  }
+  
+  Transform t = {};
+  t.materialIdx = get_material_idx(color);
+  t.renderOptions = renderOptions | RENDER_OPTION_FONT;
+  
+  float xOrigin = pos.x;
+  
+  while(char c = *(text++))
+  {
+    Glyph g = renderData->glyphs[c];
+    
+    if(c == '\n')
+    {
+      pos.y += g.spriteSize.y;
+      pos.x = xOrigin;
+    }
+    
+    // Inside Loop
+    t.pos = pos + Vec2{0.0f, (float)g.offset.y};
+    t.size = vec_2(g.spriteSize);
+    t.atlasOffset = g.textureOffset;
+    t.spriteSize = g.spriteSize;
+    add_transparent_transform(t);
+    
+    pos.x += (float)g.advance.x;
+  }
 }

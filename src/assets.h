@@ -23,6 +23,7 @@ enum SpriteID
   SPRITE_EFFECT_GARLIC,
   SPRITE_ICON_WHIP,
   SPRITE_ICON_CIRCLE,
+  SPRITE_SLICED_MENU_01,
   
   SPRITE_COUNT,
 };
@@ -146,6 +147,15 @@ internal Sprite get_sprite(SpriteID spriteID)
       s.subSize = {16, 16};
       
       break; 
+    }
+    
+    case SPRITE_SLICED_MENU_01:
+    {
+      s.atlasOffset = {0, 80};
+      s.size = {16, 16};
+      s.subSize = {16, 16};
+      
+      break;
     }
     
     default: 
