@@ -5,6 +5,7 @@
 #include "gameData.h"
 #include "input.h"
 #include "shared.h"
+#include "texts.h"
 #include "my_math.h"
 
 // Needed for Fucking rand() function, CRINGE
@@ -46,6 +47,24 @@ internal Circle get_collider(Player p)
 internal Circle get_collider(Entity e)
 {
   return {e.pos + e.collider.pos, e.collider.radius};
+}
+
+internal Weapon* get_weapon(WeaponID weaponID)
+{
+  Weapon* w = 0;
+  
+  for(int weaponIdx = 0; weaponIdx < gameState->player.weapons.count; weaponIdx++)
+  {
+    Weapon* weapon = &gameState->player.weapons[weaponIdx];
+    
+    if(weapon->ID == weaponID)
+    {
+      w = weapon;
+      break;
+    }
+  }
+  
+  return w;
 }
 
 internal bool has_hit_enemy(DamagingArea da, int enemyID)
@@ -130,30 +149,30 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     }
   }
   
-  draw_text("Test", {100.0f, 100.0f}, COLOR_RED);
-  draw_quad({300.0f, 500.0f}, {100.0f, 100.0f});
-  draw_sliced_sprite(SPRITE_SLICED_MENU_01, {300.0f, 500.0f}, {100.0f, 100.0f});
-  
   switch(gameState->state)
   {
     case GAME_STATE_LEVEL_UP:
     {
-      Vec2 levelUpMenuSize = {500.0f, 600.0f};
+      Vec2 levelUpMenuSize = {800.0f, 600.0f};
       Vec2 levelUpMenuPos = vec_2(input->screenSize) / 2.0f;
-      draw_quad(levelUpMenuPos, levelUpMenuSize);
+      draw_text("Level Up", levelUpMenuPos + Vec2{-85.0f, - 250.0f});
+      draw_sliced_sprite(SPRITE_SLICED_MENU_01, levelUpMenuPos, levelUpMenuSize);
       
-      Vec2 contentPos = levelUpMenuPos + Vec2{0.0f, -100.0f};
+      Vec2 contentPos = levelUpMenuPos + Vec2{-280.0f, -150.0f};
       Vec2 iconSize = vec_2(64.0f);
       
       // Whip
+      Weapon* whip = get_weapon(WEAPON_WHIP);
       Rect whipRect = {contentPos - iconSize / 2.0f, iconSize};
       draw_sprite(SPRITE_ICON_WHIP, contentPos, iconSize);
-      contentPos.y += 70.0f;
+      int idx = min<int>(ArraySize(WHIP_LEVEL_DESCRIPTIONS) - 1, whip->level + 1);
+      draw_text(WHIP_LEVEL_DESCRIPTIONS[idx], contentPos + Vec2{90.0f});
+      contentPos.y += 90.0f;
       
       // AOE
       Rect aoeRect = {contentPos - iconSize / 2.0f, iconSize};
       draw_sprite(SPRITE_ICON_CIRCLE, contentPos, iconSize);
-      contentPos.y += 70.0f;
+      contentPos.y += 90.0f;
       
       if(is_key_pressed(KEY_LEFT_MOUSE))
       {
@@ -197,7 +216,6 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
   
 }
 
-
 internal void update_level(float dt)
 {
   gameState->totalTime += dt;
@@ -205,7 +223,7 @@ internal void update_level(float dt)
   
   // Spawning System
   {
-    float spawnRate = 8.0f;
+    float spawnRate = 0.08f;
     while(gameState->spawnTimer > spawnRate)
     {
       if(gameState->enemies.count < MAX_ENEMIES)

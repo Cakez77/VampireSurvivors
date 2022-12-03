@@ -23,4 +23,4 @@ cl /nologo /std:c++20 %warnings% /Zc:strictStrings- /FC src/win32_platform.cpp /
 
 @REM Play sound to indicate Building is completed
 @REM @Note(tkap, 29/11/2022): This is to make the powershell stuff not block the terminal. Otherwise the terminal is blocked until the sound finishes playing
-start /MIN "" powershell -c (New-Object Media.SoundPlayer ".\assets\sounds\building-completed.wav").PlaySync()
+@REM start /MIN "" powershell -c (New-Object Media.SoundPlayer ".\assets\sounds\building-completed.wav").PlaySync()

@@ -22,8 +22,8 @@ void main()
 {
   Transform t = transforms[gl_InstanceID];
 
-  // If not drawing font, then we align to center
-  if(!bool(t.renderOptions & RENDER_OPTION_FONT))
+  // If not drawing top left, then we align to center
+  if(!bool(t.renderOptions & RENDER_OPTION_TOP_LEFT))
   {
     t.pos -= t.size / 2.0;
   }
