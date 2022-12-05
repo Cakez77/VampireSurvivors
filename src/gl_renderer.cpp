@@ -474,7 +474,9 @@ internal bool gl_init(void* window, RenderData* renderData)
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, glContext.transformSBOID);
     }
     
-    // 
+    init_font(24);
+    
+    // Generate Image for Texture Atlas
     {
       glGenTextures(1, &glContext.textureAtlas01.ID);
       glActiveTexture(GL_TEXTURE0);
@@ -502,7 +504,6 @@ internal bool gl_init(void* window, RenderData* renderData)
       }
     }
     
-    init_font(24);
     
     glUseProgram(glContext.programID);
     

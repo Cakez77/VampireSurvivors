@@ -24,6 +24,7 @@ enum SpriteID
   SPRITE_ICON_WHIP,
   SPRITE_ICON_CIRCLE,
   SPRITE_SLICED_MENU_01,
+  SPRITE_TILE_GRASS_01,
   
   SPRITE_COUNT,
 };
@@ -115,7 +116,7 @@ internal Sprite get_sprite(SpriteID spriteID)
     
     case SPRITE_EXP_BAR_RIGHT:
     {
-      s.atlasOffset = {12, 80};
+      s.atlasOffset = {11, 80};
       s.size = {4, 16};
       s.subSize = {4, 16};
       
@@ -154,6 +155,15 @@ internal Sprite get_sprite(SpriteID spriteID)
       s.atlasOffset = {0, 80};
       s.size = {16, 16};
       s.subSize = {16, 16};
+      
+      break;
+    }
+    
+    case SPRITE_TILE_GRASS_01:
+    {
+      s.atlasOffset = {96, 64};
+      s.size = {64, 64};
+      s.subSize = {64, 64};
       
       break;
     }

@@ -149,6 +149,36 @@ internal bool operator==(Vec4 a, Vec4 b)
   return a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w;
 }
 
+internal Vec4 operator*(Vec4 a, Vec4 other)
+{
+  return Vec4{
+    a.x * other.x,
+    a.y * other.y,
+    a.z * other.z,
+    a.w * other.w};
+}
+
+internal Vec4 operator*(Vec4 a, float scalar)
+{
+  return Vec4{
+    a.x * scalar,
+    a.y * scalar,
+    a.z * scalar,
+    a.w * scalar};
+}
+
+internal Vec4& operator*=(Vec4& a, Vec4 b)
+{
+  a = a * b;
+  return a;
+}
+
+internal Vec4& operator*=(Vec4& a, float scalar)
+{
+  a = a * scalar;
+  return a;
+}
+
 //#############################################################
 //                  Functions
 //#############################################################
@@ -221,7 +251,7 @@ internal bool point_in_circle(Vec2 point, Circle c)
 internal bool point_in_rect(Vec2 point, Rect rect)
 {
   return (point.x >= rect.pos.x &&
-          point.x <= rect.pos.x + rect.size.y &&
+          point.x <= rect.pos.x + rect.size.x &&
           point.y >= rect.pos.y &&
           point.y <= rect.pos.y + rect.size.y);
 }

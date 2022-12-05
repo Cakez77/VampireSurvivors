@@ -5,12 +5,12 @@
 //                  Memory
 //#############################################################
 constexpr int TRANSIENT_BUFFER_SIZE = MB(10);
-constexpr int PERSISTANT_BUFFER_SIZE = MB(10);
+constexpr int PERSISTENT_BUFFER_SIZE = MB(10);
 
 //#############################################################
 //                  Rendering
 //#############################################################
-constexpr int MAX_TRANSFORMS = 1000;
+constexpr int MAX_TRANSFORMS = 5000;
 constexpr int MAX_MATERIALS = 100;
 constexpr Vec2 ORIGIN_TOP_LEFT = {1.0f, 1.0f};
 constexpr Vec2 ORIGIN_CENTER = {0.0f, 0.0f};

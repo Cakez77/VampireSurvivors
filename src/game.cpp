@@ -19,7 +19,7 @@ global_variable GameState* gameState = 0;
 global_variable RenderData* renderData = 0;
 #include "render_interface.cpp"
 
-internal void player_add_weapon(WeaponID ID, int level = 0)
+internal void player_add_weapon(WeaponID ID, int level = 1)
 {
   Weapon w = {};
   w.ID = ID;
@@ -149,10 +149,33 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     }
   }
   
+  // Draw Background
+  {
+    //WORLD SIZE {1600, 900};
+    //1600 / 128 
+    // Random Start Pos that is outside the Screen
+    float startX = -13.0f;
+    Vec2 tilePos = {startX, -13.0f};
+    Vec2 tileSize = Vec2{64.0f, 64.0f} * 2.0f;
+    for(int rowIdx = 0; rowIdx < 8; rowIdx++)
+    {
+      for(int colIdx = 0; colIdx < 14; colIdx++)
+      {
+        draw_sprite(SPRITE_TILE_GRASS_01, tilePos, tileSize, 
+                    {.renderOptions = RENDER_OPTION_TOP_LEFT});
+        tilePos.x += tileSize.x;
+      }
+      
+      tilePos.x = startX;
+      tilePos.y += tileSize.y;
+    }
+  }
+  
   switch(gameState->state)
   {
     case GAME_STATE_LEVEL_UP:
     {
+      Vec4 boxColor = COLOR_WHITE;
       Vec2 levelUpMenuSize = {800.0f, 600.0f};
       Vec2 levelUpMenuPos = vec_2(input->screenSize) / 2.0f;
       draw_text("Level Up", levelUpMenuPos + Vec2{-85.0f, - 250.0f});
@@ -163,16 +186,32 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       
       // Whip
       Weapon* whip = get_weapon(WEAPON_WHIP);
-      Rect whipRect = {contentPos - iconSize / 2.0f, iconSize};
+      Rect whipRect = {levelUpMenuPos.x - 350.0f, contentPos.y - 45.0f, 700.0f, 90.0f};
+      if(point_in_rect(input->mousePosScreen, whipRect))
+      {
+        boxColor *= 2.0f;
+      }
+      draw_sliced_sprite(SPRITE_SLICED_MENU_01, {levelUpMenuPos.x, contentPos.y}, {700.0f, 90.0f},
+                         {.color = boxColor});
       draw_sprite(SPRITE_ICON_WHIP, contentPos, iconSize);
-      int idx = min<int>(ArraySize(WHIP_LEVEL_DESCRIPTIONS) - 1, whip->level + 1);
+      int idx = min<int>(ArraySize(WHIP_LEVEL_DESCRIPTIONS) - 1, whip->level);
       draw_text(WHIP_LEVEL_DESCRIPTIONS[idx], contentPos + Vec2{90.0f});
-      contentPos.y += 90.0f;
+      contentPos.y += 110.0f;
       
       // AOE
-      Rect aoeRect = {contentPos - iconSize / 2.0f, iconSize};
+      boxColor = COLOR_WHITE;
+      Weapon* garlic = get_weapon(WEAPON_GARLIC);
+      Rect aoeRect = {levelUpMenuPos.x - 350.0f, contentPos.y - 45.0f, 700.0f, 90.0f};
+      if(point_in_rect(input->mousePosScreen, aoeRect))
+      {
+        boxColor *= 2.0f;
+      }
+      draw_sliced_sprite(SPRITE_SLICED_MENU_01, {levelUpMenuPos.x, contentPos.y}, {700.0f, 90.0f},
+                         {.color = boxColor});
       draw_sprite(SPRITE_ICON_CIRCLE, contentPos, iconSize);
-      contentPos.y += 90.0f;
+      idx = min<int>(ArraySize(GARLIC_LEVEL_DESCRIPTIONS) - 1, garlic->level);
+      draw_text(GARLIC_LEVEL_DESCRIPTIONS[idx], contentPos + Vec2{90.0f});
+      contentPos.y += 110.0f;
       
       if(is_key_pressed(KEY_LEFT_MOUSE))
       {
@@ -213,7 +252,6 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       break;
     }
   }
-  
 }
 
 internal void update_level(float dt)
@@ -238,6 +276,7 @@ internal void update_level(float dt)
         Entity enemy = {.ID = gameState->entityIDCounter++, .pos = spawnPos};
         
         // @Note(tkap, 29/11/2022): What even is this? WeirdDude
+        // TODO: This is HP Scaling Bruh
         enemy.hp += (int)gameState->totalTime;
         
         gameState->enemies.add(enemy);
@@ -250,6 +289,63 @@ internal void update_level(float dt)
       }
     }
   }
+  
+  // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		UPDATE PICKUPS START		vvvvvvvvvvvvvvvvvvvvvvvvv
+  {
+    Circle playerPickupCollider = get_pickup_collider(gameState->player);
+    Circle playerPickupTriggerCollider = get_pickup_trigger_collider(gameState->player);
+    for(int pickupIdx = 0; pickupIdx < gameState->pickups.count; pickupIdx++)
+    {
+      Pickup* p = &gameState->pickups[pickupIdx];
+      
+      SpriteID spriteID = SPRITE_WHITE;
+      
+      switch(p->type)
+      {
+        case PICKUP_TYPE_EXP:
+        {
+          if(!p->triggered && point_in_circle(p->pos, playerPickupTriggerCollider))
+          {
+            p->triggered = true;
+            
+            // @Note(tkap, 29/11/2022): Start by going away from the player, same effect as VS
+            p->vel = normalize(p->pos - gameState->player.pos) * 70;
+          }
+          if(p->triggered)
+          {
+            Vec2 dir = normalize(gameState->player.pos - p->pos);
+            p->vel += dir * dt * 500;
+            
+            // @Note(tkap, 29/11/2022): Capping the speed
+            p->vel = p->vel * 0.9f;
+            
+            p->pos += p->vel * dt * 10;
+          }
+          spriteID = SPRITE_CRYSTAL;
+          break;
+        }
+      }
+      
+      Sprite s = get_sprite(spriteID);
+      draw_sprite(spriteID, p->pos, vec_2(s.subSize) * 1.5f);
+      
+      if(point_in_circle(p->pos, playerPickupCollider))
+      {
+        gameState->pickups.remove_and_swap(pickupIdx--);
+        gameState->player.exp++;
+        
+        if(gameState->player.exp >= 100)
+        {
+          // TODO: Level up
+          gameState->player.exp = 0;
+          gameState->state = GAME_STATE_LEVEL_UP;
+        }
+        
+        continue;
+      }
+    }
+  }
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE PICKUPS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
   for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
   {
@@ -437,26 +533,38 @@ internal void update_level(float dt)
           case WEAPON_GARLIC:
           {
             float hitRate = 0.5f;
-            draw_sprite(SPRITE_EFFECT_GARLIC, gameState->player.pos, {150.0f, 150.0f});
+            int damage = 200 + (w->level > 4? 100: 0);
+            float radius = 75.0f;
+            radius *= w->level < 2? 1.0f : w->level < 3? 1.1f: w->level < 5? 1.25f: 1.45f;
+            
+            Circle garlicCollider = {gameState->player.pos, radius};
+            draw_sprite(SPRITE_EFFECT_GARLIC, gameState->player.pos, vec_2(radius * 2.0f));
+            
             
             for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
             {
               Entity* e = &gameState->enemies[enemyIdx];
               Circle enemyCollider = get_collider(*e);
               
-              Circle garlicCollider = {gameState->player.pos, 100.0f};
-              
               if(circle_collision(enemyCollider, garlicCollider, 0))
               {
                 if(e->garlicHitTimer <= 0.0f)
                 {
-                  inflict_damage(e, 200);
+                  inflict_damage(e, damage);
                   e->garlicHitTimer += hitRate;
                   
                   if(e->hp <= 0)
                   {
                     gameState->enemies.remove_and_swap(enemyIdx--);
                     continue;
+                  }
+                  
+                  if(w->level >= 6)
+                  {
+                    //do knockback
+                    e->pushTime = 1.0f;
+                    Vec2 pushDir = normalize(e->pos - gameState->player.pos);
+                    e->pushDirection = pushDir * 5.0f;
                   }
                 }
               }
@@ -497,62 +605,6 @@ internal void update_level(float dt)
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE PLAYER END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
-  // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		UPDATE PICKUPS START		vvvvvvvvvvvvvvvvvvvvvvvvv
-  {
-    Circle playerPickupCollider = get_pickup_collider(gameState->player);
-    Circle playerPickupTriggerCollider = get_pickup_trigger_collider(gameState->player);
-    for(int pickupIdx = 0; pickupIdx < gameState->pickups.count; pickupIdx++)
-    {
-      Pickup* p = &gameState->pickups[pickupIdx];
-      
-      SpriteID spriteID = SPRITE_WHITE;
-      
-      switch(p->type)
-      {
-        case PICKUP_TYPE_EXP:
-        {
-          if(!p->triggered && point_in_circle(p->pos, playerPickupTriggerCollider))
-          {
-            p->triggered = true;
-            
-            // @Note(tkap, 29/11/2022): Start by going away from the player, same effect as VS
-            p->vel = normalize(p->pos - gameState->player.pos) * 70;
-          }
-          if(p->triggered)
-          {
-            Vec2 dir = normalize(gameState->player.pos - p->pos);
-            p->vel += dir * dt * 500;
-            
-            // @Note(tkap, 29/11/2022): Capping the speed
-            p->vel = p->vel * 0.9f;
-            
-            p->pos += p->vel * dt * 10;
-          }
-          spriteID = SPRITE_CRYSTAL;
-          break;
-        }
-      }
-      
-      Sprite s = get_sprite(spriteID);
-      draw_sprite(spriteID, p->pos, vec_2(s.subSize) * 1.5f);
-      
-      if(point_in_circle(p->pos, playerPickupCollider))
-      {
-        gameState->pickups.remove_and_swap(pickupIdx--);
-        gameState->player.exp++;
-        
-        if(gameState->player.exp >= 100)
-        {
-          // TODO: Level up
-          gameState->player.exp = 0;
-          gameState->state = GAME_STATE_LEVEL_UP;
-        }
-        
-        continue;
-      }
-    }
-  }
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE PLAYER END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
   // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		ACTIVE ATTACKS START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
   {

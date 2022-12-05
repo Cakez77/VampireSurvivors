@@ -203,7 +203,7 @@ typedef void(update_game_type)(GameState*, Input*, RenderData*, float);
 int main()
 { 
   transientBuffer = (char*)malloc(TRANSIENT_BUFFER_SIZE);
-  persistentBuffer = (char*)malloc(PERSISTANT_BUFFER_SIZE);
+  persistentBuffer = (char*)malloc(PERSISTENT_BUFFER_SIZE);
   
   input = (Input*)platform_allocate_persistent(sizeof(Input));
   if(!input)
@@ -594,7 +594,7 @@ char* platform_allocate_persistent(uint32_t sizeInBytes)
 {
   char* buffer = 0;
   
-  if(persistentBytesUsed + sizeInBytes < TRANSIENT_BUFFER_SIZE)
+  if(persistentBytesUsed + sizeInBytes < PERSISTENT_BUFFER_SIZE)
   {
     buffer = persistentBuffer + persistentBytesUsed;
     memset(buffer, 0, sizeInBytes);
