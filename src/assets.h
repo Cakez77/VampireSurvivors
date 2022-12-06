@@ -14,6 +14,7 @@ enum SpriteID
   SPRITE_WHITE,
   SPRITE_ENEMY_01,
   SPRITE_ENEMY_02,
+  SPRITE_ENEMY_PLANT,
   SPRITE_HERO_KARATE_MAN,
   SPRITE_EFFECT_WHIP,
   SPRITE_CRYSTAL,
@@ -65,6 +66,15 @@ internal Sprite get_sprite(SpriteID spriteID)
       s.atlasOffset = {32, 0};
       s.size = {64, 64};
       s.subSize = {64, 64};
+      
+      break;
+    }
+    
+    case SPRITE_ENEMY_PLANT:
+    {
+      s.atlasOffset = {384, 0};
+      s.size = {32, 32};
+      s.subSize = {32, 32};
       
       break;
     }

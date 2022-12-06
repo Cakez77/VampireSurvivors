@@ -6,10 +6,19 @@
 //#############################################################
 //                  Internal Structures
 //#############################################################
+enum EnemyType
+{
+  ENEMY_TYPE_MOLTEN_MIDGET,
+  ENEMY_TYPE_BAT,
+  ENEMY_TYPE_PLANT,
+  
+  ENEMY_TYPE_COUNT
+};
+
 struct Entity
 {
   int ID;
-  SpriteID spriteID = SPRITE_ENEMY_01;
+  SpriteID spriteID = SPRITE_WHITE;
   Vec2 pos;
   Vec2 desiredDirection;
   Vec2 seperationForce;
@@ -20,8 +29,9 @@ struct Entity
   
   Circle collider  = {{0.0f, 0.0f}, 20.0f};
   
-  int hp = 100;
+  int hp = 5;
   int attack = 10;
+  float moveSpeed = 100.0f;
   float attackTime;
   float garlicHitTimer;
 };
@@ -43,6 +53,7 @@ struct Weapon
 struct ActiveAttack
 {
   WeaponID ID;
+  int damage;
   float timePassed;
   
   Vec2 pos;
@@ -79,6 +90,7 @@ struct DamagingArea
   SpriteID spriteID;
   float timePassed;
   float duration;
+  int damage;
   Vec2 pos;
   Vec2 size;
   
@@ -119,6 +131,7 @@ struct GameState
   int currentSpawnBreakPoint;
   float spawnsPerSecond;
   int spawnCounter;
+  int spawnRateIdx;
   
   Array<Entity, MAX_ENEMIES> enemies;
   Array<ActiveAttack, MAX_ACTIVE_ATTACKS> activeAttacks;

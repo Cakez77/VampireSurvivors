@@ -19,6 +19,46 @@ global_variable GameState* gameState = 0;
 global_variable RenderData* renderData = 0;
 #include "render_interface.cpp"
 
+internal void spawn_enemy(EnemyType type, Vec2 pos)
+{
+  Entity e = {};
+  e.pos = pos;
+  e.ID = gameState->entityIDCounter++;
+  
+  switch(type)
+  {
+    case ENEMY_TYPE_MOLTEN_MIDGET:
+    {
+      e.spriteID = SPRITE_ENEMY_01;
+      e.hp = 5;
+      e.attack = 10;
+      
+      break;
+    }
+    
+    case ENEMY_TYPE_BAT:
+    {
+      e.spriteID = SPRITE_WHITE;
+      e.hp = 8;
+      e.attack = 10;
+      
+      break;
+    }
+    
+    case ENEMY_TYPE_PLANT:
+    {
+      e.spriteID = SPRITE_ENEMY_PLANT;
+      e.hp = 10;
+      e.attack = 10;
+      e.moveSpeed = 50.0f;
+      
+      break;
+    }
+  }
+  
+  gameState->enemies.add(e);
+}
+
 internal void player_add_weapon(WeaponID ID, int level = 1)
 {
   Weapon w = {};
@@ -98,13 +138,14 @@ internal void inflict_damage(Entity* e, int dmg)
   }
 }
 
-internal void add_damaging_area(SpriteID spriteID, Vec2 pos, Vec2 size, float duration)
+internal void add_damaging_area(SpriteID spriteID, Vec2 pos, Vec2 size, int damage, float duration)
 {
   DamagingArea da = {};
   da.spriteID = spriteID;
   da.pos = pos;
   da.size = size;
   da.duration = duration;
+  da.damage = damage;
   
   gameState->damagingAreas.add(da);
 }
@@ -259,9 +300,35 @@ internal void update_level(float dt)
   gameState->totalTime += dt;
   gameState->spawnTimer += dt / 1.0f;
   
+  struct SpawnData
+  {
+    float time;
+    float rate;
+    EnemyType enemyType;
+  };
+  
+  SpawnData spawnRates[] =
+  {
+    {0.0f, 0.2f, ENEMY_TYPE_MOLTEN_MIDGET},
+    {10.0f, 0.1f, ENEMY_TYPE_PLANT}
+  };
+  
   // Spawning System
   {
-    float spawnRate = 0.08f;
+    // Get spawnRate
+    {
+      assert(gameState->spawnRateIdx < ArraySize(spawnRates));
+      
+      if(gameState->spawnRateIdx + 1 < ArraySize(spawnRates) &&
+         spawnRates[gameState->spawnRateIdx + 1].time <= gameState->totalTime)
+      {
+        gameState->spawnRateIdx++;
+      }
+    }
+    
+    float spawnRate = spawnRates[gameState->spawnRateIdx].rate;
+    EnemyType enemyType = spawnRates[gameState->spawnRateIdx].enemyType;
+    
     while(gameState->spawnTimer > spawnRate)
     {
       if(gameState->enemies.count < MAX_ENEMIES)
@@ -273,13 +340,7 @@ internal void update_level(float dt)
         Vec2 spawnDirection = {cosf(randomAngle), sinf(randomAngle)};
         Vec2 spawnPos = playerPos + spawnDirection * gameState->playerScreenEdgeDist;
         
-        Entity enemy = {.ID = gameState->entityIDCounter++, .pos = spawnPos};
-        
-        // @Note(tkap, 29/11/2022): What even is this? WeirdDude
-        // TODO: This is HP Scaling Bruh
-        enemy.hp += (int)gameState->totalTime;
-        
-        gameState->enemies.add(enemy);
+        spawn_enemy(enemyType, spawnPos);
         
         gameState->spawnTimer -= spawnRate;
       }
@@ -382,7 +443,7 @@ internal void update_level(float dt)
     }
     
     // 50 Pixels per second
-    float movementDistance = 100.0f;
+    float movementDistance = enemy->moveSpeed;
     
     Vec2 direction = normalize(gameState->player.pos - enemy->pos);
     enemy->desiredDirection = direction * movementDistance;
@@ -443,7 +504,8 @@ internal void update_level(float dt)
     // Draw
     {
       Sprite s = get_sprite(enemy->spriteID);
-      draw_sprite(enemy->spriteID, enemy->pos, vec_2(s.subSize) * enemy->scale, {.color = enemy->color});
+      draw_sprite(enemy->spriteID, enemy->pos, vec_2(s.subSize) * enemy->scale, {.color = enemy->color,
+                    .renderOptions = enemy->desiredDirection.x > 0.0f? RENDER_OPTION_FLIP_X: 0});
     }
   }
   
@@ -524,6 +586,16 @@ internal void update_level(float dt)
             skillCooldown = 1.0f;
             
             // Fill in data for Active Attack
+            aa.damage = 10;
+            if(w->level >= 2)
+            {
+              aa.damage += 5;
+            }
+            if(w->level >= 4)
+            {
+              aa.damage += 10;
+            }
+            
             aa.pos = gameState->player.pos; // TODO: Needed???
             aa.whip.maxSlashCount = w->level < 2? 3: w->level < 5? 4: 5;
             
@@ -533,7 +605,7 @@ internal void update_level(float dt)
           case WEAPON_GARLIC:
           {
             float hitRate = 0.5f;
-            int damage = 200 + (w->level > 4? 100: 0);
+            int damage = 6 + (w->level >= 4? 6: 0);
             float radius = 75.0f;
             radius *= w->level < 2? 1.0f : w->level < 3? 1.1f: w->level < 5? 1.25f: 1.45f;
             
@@ -625,8 +697,8 @@ internal void update_level(float dt)
             {-150.0f,  -50.0f},
             { 150.0f,    0.0f},
             {-150.0f,   50.0f},
-            {   0.0f,  100.0f},
-            {   0.0f,   50.0f},
+            { 150.0f,  100.0f},
+            {-150.0f, -100.0f},
           };
           
           while(aa->timePassed >= whip->currentSlashCount * delay)
@@ -635,7 +707,7 @@ internal void update_level(float dt)
             Sprite s = get_sprite(SPRITE_EFFECT_WHIP);
             add_damaging_area(SPRITE_EFFECT_WHIP, 
                               aa->pos + offsets[whip->currentSlashCount++], 
-                              vec_2(s.subSize) * 2.0f, 0.25f); 
+                              vec_2(s.subSize) * 2.0f, aa->damage, 0.25f); 
           }
           
           break;
@@ -694,7 +766,7 @@ internal void update_level(float dt)
         if(rect_circle_collision(daCollider, enemyCollider))
         {
           // Damage 
-          inflict_damage(enemy, 200);
+          inflict_damage(enemy, da->damage);
           
           if(enemy->hp <= 0)
           {
