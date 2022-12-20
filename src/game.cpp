@@ -38,9 +38,10 @@ internal void spawn_enemy(EnemyType type, Vec2 pos)
     
     case ENEMY_TYPE_BAT:
     {
-      e.spriteID = SPRITE_WHITE;
+      e.spriteID = SPRITE_ENEMY_BAT;
       e.hp = 8;
       e.attack = 10;
+      e.moveSpeed = 150.0f;
       
       break;
     }
@@ -51,6 +52,26 @@ internal void spawn_enemy(EnemyType type, Vec2 pos)
       e.hp = 10;
       e.attack = 10;
       e.moveSpeed = 50.0f;
+      
+      break;
+    }
+    
+    case ENEMY_TYPE_MARIO_PLANT:
+    {
+      e.spriteID = SPRITE_ENEMY_MARIO_PLANT;
+      e.hp = 40;
+      e.attack = 10;
+      e.moveSpeed = 25.0f;
+      
+      break;
+    }
+    
+    case ENEMY_TYPE_HORNET:
+    {
+      e.spriteID = SPRITE_ENEMY_HORNET;
+      e.hp = 10;
+      e.attack = 10;
+      e.moveSpeed = 200.0f;
       
       break;
     }
@@ -126,6 +147,11 @@ internal void inflict_damage(Entity* e, int dmg)
 {
   e->hp -= dmg;
   
+  DamageNumber dn = {};
+  dn.pos = e->pos;
+  dn.value = dmg;
+  gameState->damageNumbers.add(dn);
+  
   if(e->hp <= 0)
   {
     // Drop EXP Gem
@@ -164,15 +190,7 @@ __declspec(dllexport) void init_game(GameState* gameStateIn, Input* inputIn,
   input = inputIn;
   renderData = renderDataIn;
   
-  *gameState = {};
-  
-  player_add_weapon(WEAPON_WHIP);
-  player_add_weapon(WEAPON_GARLIC);
-  
-  gameState->player.pos = vec_2(input->screenSize) / 2.0f;
-  gameState->playerScreenEdgeDist = length(vec_2(WORLD_SIZE - WORLD_SIZE / 2)) + 50.0f;
-  
-  gameState->state = GAME_STATE_RUNNING_LEVEL;
+  gameState->state = GAME_STATE_SELECT_HERO;
 }
 
 __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn, 
@@ -214,6 +232,124 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
   
   switch(gameState->state)
   {
+    case GAME_STATE_SELECT_HERO:
+    {
+      //TODO Inefficient, find a better way
+      *gameState = {};
+      bool madeChoice = false;
+      
+      Vec4 boxColor = COLOR_WHITE;
+      Vec2 levelUpMenuSize = {1200.0f, 600.0f};
+      Vec2 levelUpMenuPos = vec_2(input->screenSize) / 2.0f;
+      Vec2 rectSize = vec_2(120.0f) * 3.0f;
+      Vec2 rectPos = levelUpMenuPos - Vec2{560.0f, 200.0f};
+      Vec2 heroSize = vec_2(96.0f) * 3.0f;
+      draw_text("Choose Hero", levelUpMenuPos + Vec2{-85.0f, - 250.0f});
+      draw_sliced_sprite(SPRITE_SLICED_MENU_01, levelUpMenuPos, levelUpMenuSize);
+      
+      // Belmot
+      {
+        if(point_in_rect(input->mousePosScreen, {rectPos, rectSize}))
+        {
+          boxColor *= 2.0f;
+          
+          if(is_key_pressed(KEY_LEFT_MOUSE))
+          {
+            madeChoice = true;
+            gameState->player.type = PLAYER_TYPE_BELMOT;
+          }
+        }
+        draw_sliced_sprite(SPRITE_SLICED_MENU_01, rectPos + rectSize / 2.0f, 
+                           rectSize, {.color = boxColor});
+        draw_sprite(SPRITE_PLAYER_BELMOT, rectPos + rectSize / 2.0f, heroSize);
+        
+        draw_text("Belmot", rectPos + Vec2{rectSize.x / 3.0f, rectSize.y + 20.0f});
+        
+        rectPos.x += rectSize.x + 20.0f;
+      }
+      
+      // Gandalf
+      {
+        boxColor = COLOR_WHITE;
+        if(point_in_rect(input->mousePosScreen, {rectPos, rectSize}))
+        {
+          boxColor *= 2.0f;
+          
+          if(is_key_pressed(KEY_LEFT_MOUSE))
+          {
+            madeChoice = true;
+            gameState->player.type = PLAYER_TYPE_GANDALF;
+          }
+        }
+        draw_sliced_sprite(SPRITE_SLICED_MENU_01, rectPos + rectSize / 2.0f, 
+                           rectSize, {.color = boxColor});
+        draw_sprite(SPRITE_PLAYER_GANDALF, rectPos + rectSize / 2.0f, heroSize);
+        
+        draw_text("Gandalf", rectPos + Vec2{rectSize.x / 4.0f, rectSize.y + 20.0f});
+        
+        rectPos.x += rectSize.x + 20.0f;
+      }
+      
+      // Whoswho
+      {
+        boxColor = COLOR_WHITE;
+        if(point_in_rect(input->mousePosScreen, {rectPos, rectSize}))
+        {
+          boxColor *= 2.0f;
+          
+          if(is_key_pressed(KEY_LEFT_MOUSE))
+          {
+            madeChoice = true;
+            gameState->player.type = PLAYER_TYPE_WHOSWHO;
+          }
+        }
+        draw_sliced_sprite(SPRITE_SLICED_MENU_01, rectPos + rectSize / 2.0f, 
+                           rectSize, {.color = boxColor});
+        draw_sprite(SPRITE_PLAYER_WHOSWHO, rectPos + rectSize / 2.0f, heroSize);
+        
+        draw_text("Whoswho", rectPos + Vec2{rectSize.x / 4.0f, rectSize.y + 20.0f});
+        
+        rectPos.x += rectSize.x + 20.0f;
+      }
+      
+      
+      if(madeChoice)
+      {
+        switch(gameState->player.type)
+        {
+          case PLAYER_TYPE_BELMOT:
+          {
+            player_add_weapon(WEAPON_WHIP);
+            gameState->player.spriteID = SPRITE_PLAYER_BELMOT;
+            break;
+          }
+          
+          case PLAYER_TYPE_GANDALF:
+          {
+            gameState->player.spriteID = SPRITE_PLAYER_GANDALF;
+            player_add_weapon(WEAPON_GARLIC);
+            break;
+          }
+          
+          case PLAYER_TYPE_WHOSWHO:
+          {
+            // TODO: Whoswho is gonna get a different starting weapon
+            gameState->player.spriteID = SPRITE_PLAYER_WHOSWHO;
+            player_add_weapon(WEAPON_WHIP);
+            break;
+          }
+        }
+        
+        
+        gameState->player.pos = vec_2(input->screenSize) / 2.0f;
+        gameState->playerScreenEdgeDist = length(vec_2(WORLD_SIZE - WORLD_SIZE / 2)) + 50.0f;
+        
+        
+        gameState->state = GAME_STATE_RUNNING_LEVEL;
+      }
+      break;
+    }
+    
     case GAME_STATE_LEVEL_UP:
     {
       Vec4 boxColor = COLOR_WHITE;
@@ -226,7 +362,6 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       Vec2 iconSize = vec_2(64.0f);
       
       // Whip
-      Weapon* whip = get_weapon(WEAPON_WHIP);
       Rect whipRect = {levelUpMenuPos.x - 350.0f, contentPos.y - 45.0f, 700.0f, 90.0f};
       if(point_in_rect(input->mousePosScreen, whipRect))
       {
@@ -235,13 +370,18 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       draw_sliced_sprite(SPRITE_SLICED_MENU_01, {levelUpMenuPos.x, contentPos.y}, {700.0f, 90.0f},
                          {.color = boxColor});
       draw_sprite(SPRITE_ICON_WHIP, contentPos, iconSize);
-      int idx = min<int>(ArraySize(WHIP_LEVEL_DESCRIPTIONS) - 1, whip->level);
+      
+      Weapon* whip = get_weapon(WEAPON_WHIP);
+      int idx = 0;
+      if(whip)
+      {
+        idx = min<int>(ArraySize(WHIP_LEVEL_DESCRIPTIONS) - 1, whip->level);
+      }
       draw_text(WHIP_LEVEL_DESCRIPTIONS[idx], contentPos + Vec2{90.0f});
       contentPos.y += 110.0f;
       
       // AOE
       boxColor = COLOR_WHITE;
-      Weapon* garlic = get_weapon(WEAPON_GARLIC);
       Rect aoeRect = {levelUpMenuPos.x - 350.0f, contentPos.y - 45.0f, 700.0f, 90.0f};
       if(point_in_rect(input->mousePosScreen, aoeRect))
       {
@@ -250,7 +390,13 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       draw_sliced_sprite(SPRITE_SLICED_MENU_01, {levelUpMenuPos.x, contentPos.y}, {700.0f, 90.0f},
                          {.color = boxColor});
       draw_sprite(SPRITE_ICON_CIRCLE, contentPos, iconSize);
-      idx = min<int>(ArraySize(GARLIC_LEVEL_DESCRIPTIONS) - 1, garlic->level);
+      
+      Weapon* garlic = get_weapon(WEAPON_GARLIC);
+      idx = 0;
+      if(garlic)
+      {
+        idx = min<int>(ArraySize(GARLIC_LEVEL_DESCRIPTIONS) - 1, garlic->level);
+      }
       draw_text(GARLIC_LEVEL_DESCRIPTIONS[idx], contentPos + Vec2{90.0f});
       contentPos.y += 110.0f;
       
@@ -270,6 +416,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
         
         if(weaponID < WEAPON_COUNT)
         {
+          bool weaponFound = false;
           for(int weaponIdx = 0; weaponIdx < gameState->player.weapons.count; weaponIdx++)
           {
             Weapon* w = &gameState->player.weapons[weaponIdx];
@@ -277,9 +424,17 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
             if(w->ID == weaponID)
             {
               w->level++;
-              gameState->state = GAME_STATE_RUNNING_LEVEL;
+              weaponFound = true;
+              break;
             }
           }
+          
+          if(!weaponFound)
+          {
+            player_add_weapon(weaponID);
+          }
+          
+          gameState->state = GAME_STATE_RUNNING_LEVEL;
         }
       }
       
@@ -300,21 +455,47 @@ internal void update_level(float dt)
   gameState->totalTime += dt;
   gameState->spawnTimer += dt / 1.0f;
   
-  struct SpawnData
+  // EXP Table, needed by Pickups and EXP Bar
+  int expTable [] = 
   {
-    float time;
-    float rate;
-    EnemyType enemyType;
-  };
-  
-  SpawnData spawnRates[] =
-  {
-    {0.0f, 0.2f, ENEMY_TYPE_MOLTEN_MIDGET},
-    {10.0f, 0.1f, ENEMY_TYPE_PLANT}
+    0,
+    20,
+    40,
+    60,
+    80,
+    100,
+    120,
+    140,
+    160,
+    180,
+    200,
+    220,
+    240,
+    260,
+    280,
+    300,
+    320,
+    340,
   };
   
   // Spawning System
   {
+    struct SpawnData
+    {
+      float time;
+      float rate;
+      EnemyType enemyType;
+    };
+    
+    SpawnData spawnRates[] =
+    {
+      {0.0f, 0.2f, ENEMY_TYPE_MOLTEN_MIDGET},
+      {15.0f, 0.1f, ENEMY_TYPE_BAT},
+      {25.0f, 0.1f, ENEMY_TYPE_PLANT},
+      {50.0f, 0.1f, ENEMY_TYPE_MARIO_PLANT},
+      {90.0f, 0.05f, ENEMY_TYPE_HORNET}
+    };
+    
     // Get spawnRate
     {
       assert(gameState->spawnRateIdx < ArraySize(spawnRates));
@@ -350,6 +531,33 @@ internal void update_level(float dt)
       }
     }
   }
+  
+  
+  // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		UPDATE DAMAGE NUMBERS START	vvvvvvvvvvvvvvvvvvvvvvvvv
+  {
+    for(int damageNumberIdx = 0; 
+        damageNumberIdx < gameState->damageNumbers.count; 
+        damageNumberIdx++)
+    {
+      DamageNumber* dn = &gameState->damageNumbers[damageNumberIdx];
+      
+      char numberText[16] = {};
+      sprintf(numberText, "%d", dn->value);
+      draw_text(numberText, dn->pos);
+      
+      dn->timer += dt;
+      dn->pos.y -= 20.0f * dt;
+      
+      if(dn->timer >= 0.5f)
+      {
+        gameState->damageNumbers.remove_and_swap(damageNumberIdx--);
+        continue;
+      }
+      
+      
+    }
+  }
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE DAMAGE NUMBERS END		^^^^^^^^^^^^^^^^^^^^^^^^^
   
   // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		UPDATE PICKUPS START		vvvvvvvvvvvvvvvvvvvvvvvvv
   {
@@ -395,10 +603,13 @@ internal void update_level(float dt)
         gameState->pickups.remove_and_swap(pickupIdx--);
         gameState->player.exp++;
         
-        if(gameState->player.exp >= 100)
+        int level = min(gameState->player.level, ArraySize(expTable) - 1);
+        int expNeeded = expTable[level];
+        
+        if(gameState->player.exp >= expNeeded)
         {
-          // TODO: Level up
           gameState->player.exp = 0;
+          gameState->player.level++;
           gameState->state = GAME_STATE_LEVEL_UP;
         }
         
@@ -795,7 +1006,9 @@ internal void update_level(float dt)
                 {input->screenSize.x - 16.0f, 32.0f});
     draw_sprite(SPRITE_EXP_BAR_RIGHT, {input->screenSize.x - 4.0f, 16.0f}, {8.0f, 32.0f});
     
-    float barSizeX = (input->screenSize.x - 15.0f) * (float)gameState->player.exp / 100.0f;
+    int level = min(gameState->player.level, ArraySize(expTable) - 1);
+    float expNeeded = (float)expTable[level];
+    float barSizeX = (input->screenSize.x - 15.0f) * (float)gameState->player.exp / expNeeded;
     draw_sprite(SPRITE_WHITE, {barSizeX / 2.0f + 6.0f, 15.0f}, {barSizeX, 18.0f},{.color = COLOR_BLUE});
   }
 }

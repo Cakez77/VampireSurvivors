@@ -14,8 +14,13 @@ enum SpriteID
   SPRITE_WHITE,
   SPRITE_ENEMY_01,
   SPRITE_ENEMY_02,
+  SPRITE_ENEMY_BAT,
   SPRITE_ENEMY_PLANT,
-  SPRITE_HERO_KARATE_MAN,
+  SPRITE_ENEMY_MARIO_PLANT,
+  SPRITE_ENEMY_HORNET,
+  SPRITE_PLAYER_WHOSWHO,
+  SPRITE_PLAYER_BELMOT,
+  SPRITE_PLAYER_GANDALF,
   SPRITE_EFFECT_WHIP,
   SPRITE_CRYSTAL,
   SPRITE_EXP_BAR_LEFT,
@@ -70,6 +75,15 @@ internal Sprite get_sprite(SpriteID spriteID)
       break;
     }
     
+    case SPRITE_ENEMY_BAT:
+    {
+      s.atlasOffset = {160, 32};
+      s.size = {48, 32};
+      s.subSize = {48, 32};
+      
+      break;
+    }
+    
     case SPRITE_ENEMY_PLANT:
     {
       s.atlasOffset = {384, 0};
@@ -79,9 +93,45 @@ internal Sprite get_sprite(SpriteID spriteID)
       break;
     }
     
-    case SPRITE_HERO_KARATE_MAN:
+    case SPRITE_ENEMY_MARIO_PLANT:
+    {
+      s.atlasOffset = {208, 32};
+      s.size = {48, 32};
+      s.subSize = {48, 32};
+      
+      break;
+    }
+    
+    case SPRITE_ENEMY_HORNET:
+    {
+      s.atlasOffset = {256, 32};
+      s.size = {48, 48};
+      s.subSize = {48, 48};
+      
+      break;
+    }
+    
+    case SPRITE_PLAYER_WHOSWHO:
     {
       s.atlasOffset = {96, 0};
+      s.size = {48, 48};
+      s.subSize = {48, 48};
+      
+      break;
+    }
+    
+    case SPRITE_PLAYER_BELMOT:
+    {
+      s.atlasOffset = {160, 64};
+      s.size = {48, 48};
+      s.subSize = {48, 48};
+      
+      break;
+    }
+    
+    case SPRITE_PLAYER_GANDALF:
+    {
+      s.atlasOffset = {208, 64};
       s.size = {48, 48};
       s.subSize = {48, 48};
       

@@ -303,3 +303,13 @@ internal T min(T a, T b)
 {
   return a < b ? a : b;
 }
+
+internal int min(int a, int b)
+{
+  return a < b? a : b;
+}
+
+internal int max(int a, int b)
+{
+  return a > b? a : b;
+}

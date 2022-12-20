@@ -11,6 +11,8 @@ enum EnemyType
   ENEMY_TYPE_MOLTEN_MIDGET,
   ENEMY_TYPE_BAT,
   ENEMY_TYPE_PLANT,
+  ENEMY_TYPE_MARIO_PLANT,
+  ENEMY_TYPE_HORNET,
   
   ENEMY_TYPE_COUNT
 };
@@ -68,9 +70,17 @@ struct ActiveAttack
   };
 };
 
+enum PlayerType
+{
+  PLAYER_TYPE_BELMOT,
+  PLAYER_TYPE_GANDALF,
+  PLAYER_TYPE_WHOSWHO,
+};
+
 struct Player
 {
-  SpriteID spriteID = SPRITE_HERO_KARATE_MAN;
+  PlayerType type;
+  SpriteID spriteID = SPRITE_WHITE;
   Vec2 pos;
   Circle collider ={{0.0f, 0.0f}, 12.0f};
   float speed = 400.0f;
@@ -78,6 +88,7 @@ struct Player
   float pickupRadius = 20.0f;
   bool flipX;
   
+  int level = 1;
   int maxHP = 300;
   int hp = 300;
   int exp;
@@ -111,8 +122,16 @@ struct Pickup
   Vec2 vel;
 };
 
+struct DamageNumber
+{
+  int value;
+  Vec2 pos;
+  float timer;
+};
+
 enum GameStateID
 {
+  GAME_STATE_SELECT_HERO,
   GAME_STATE_LEVEL_UP,
   GAME_STATE_RUNNING_LEVEL,
   
@@ -133,6 +152,7 @@ struct GameState
   int spawnCounter;
   int spawnRateIdx;
   
+  Array<DamageNumber, MAX_DAMAGE_NUMBERS> damageNumbers;
   Array<Entity, MAX_ENEMIES> enemies;
   Array<ActiveAttack, MAX_ACTIVE_ATTACKS> activeAttacks;
   Array<DamagingArea, MAX_DAMAGING_AREAS> damagingAreas;

@@ -211,7 +211,7 @@ void draw_text(char* text, Vec2 pos, Vec4 color, RenderOptions renderOptions)
     
     if(c == '\n')
     {
-      pos.y += g.spriteSize.y;
+      pos.y += g.advance.y;
       pos.x = xOrigin;
     }
     

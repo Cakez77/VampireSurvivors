@@ -24,3 +24,4 @@ constexpr int MAX_ENEMIES = 500;
 constexpr int MAX_ACTIVE_ATTACKS = 128;
 constexpr int MAX_DAMAGING_AREAS = 128;
 constexpr int MAX_PICKUPS = 1000;
+constexpr int MAX_DAMAGE_NUMBERS = 200;
