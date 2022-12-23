@@ -21,3 +21,14 @@ static constexpr char* GARLIC_LEVEL_DESCRIPTIONS[] =
   "Knocks back enemies slightly",
   "Reached maximum level"
 };
+
+static constexpr char* MAGMA_RING_LEVEL_DESCRIPTIONS[] =
+{
+  "Creates a Mama Puddle.",
+  "Inc. the AOE by 10%",
+  "Inc. the AOE by 15%",
+  "Deals more Damage",
+  "Inc. the AOE by 20%",
+  "Knocks back enemies slightly",
+  "Reached maximum level"
+};

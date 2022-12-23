@@ -27,8 +27,13 @@ enum SpriteID
   SPRITE_EXP_BAR_MIDDLE,
   SPRITE_EXP_BAR_RIGHT,
   SPRITE_EFFECT_GARLIC,
+  SPRITE_EFFECT_MAGMA_BALL,
+  SPRITE_EFFECT_MAGMA_PUDDLE,
   SPRITE_ICON_WHIP,
   SPRITE_ICON_CIRCLE,
+  SPRITE_ICON_AXE,
+  SPRITE_ICON_MORNING_STAR,
+  SPRITE_ICON_MAGMA_RING,
   SPRITE_SLICED_MENU_01,
   SPRITE_TILE_GRASS_01,
   
@@ -192,6 +197,24 @@ internal Sprite get_sprite(SpriteID spriteID)
       break; 
     }
     
+    case SPRITE_EFFECT_MAGMA_BALL:
+    {
+      s.atlasOffset = {96, 48};
+      s.size = {8, 8};
+      s.subSize = {8, 8};
+      
+      break; 
+    }
+    
+    case SPRITE_EFFECT_MAGMA_PUDDLE:
+    {
+      s.atlasOffset = {0, 176};
+      s.size = {48, 48};
+      s.subSize = {48, 48};
+      
+      break; 
+    }
+    
     case SPRITE_ICON_WHIP:
     {
       s.atlasOffset = {16, 80};
@@ -204,6 +227,33 @@ internal Sprite get_sprite(SpriteID spriteID)
     case SPRITE_ICON_CIRCLE:
     {
       s.atlasOffset = {32, 80};
+      s.size = {16, 16};
+      s.subSize = {16, 16};
+      
+      break; 
+    }
+    
+    case SPRITE_ICON_AXE:
+    {
+      s.atlasOffset = {48, 80};
+      s.size = {16, 16};
+      s.subSize = {16, 16};
+      
+      break; 
+    }
+    
+    case SPRITE_ICON_MORNING_STAR:
+    {
+      s.atlasOffset = {64, 80};
+      s.size = {16, 16};
+      s.subSize = {16, 16};
+      
+      break; 
+    }
+    
+    case SPRITE_ICON_MAGMA_RING:
+    {
+      s.atlasOffset = {80, 80};
       s.size = {16, 16};
       s.subSize = {16, 16};
       

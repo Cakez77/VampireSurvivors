@@ -42,6 +42,7 @@ enum WeaponID
 {
   WEAPON_WHIP,
   WEAPON_GARLIC,
+  WEAPON_MAGMA_RING,
   WEAPON_COUNT,
 };
 
@@ -59,6 +60,7 @@ struct ActiveAttack
   float timePassed;
   
   Vec2 pos;
+  Vec2 targetPos;
   
   union
   {

@@ -1,0 +1,4 @@
+- Is there a chance to write a function that loads sprite parameters from a TXT file? 
+  for easier graphical  modding of the game without recompilation... 
+  can only be for debug mode (haszkasz)
+

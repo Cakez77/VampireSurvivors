@@ -335,7 +335,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
           {
             // TODO: Whoswho is gonna get a different starting weapon
             gameState->player.spriteID = SPRITE_PLAYER_WHOSWHO;
-            player_add_weapon(WEAPON_WHIP);
+            player_add_weapon(WEAPON_MAGMA_RING);
             break;
           }
         }
@@ -400,6 +400,26 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       draw_text(GARLIC_LEVEL_DESCRIPTIONS[idx], contentPos + Vec2{90.0f});
       contentPos.y += 110.0f;
       
+      // Magma Ring
+      boxColor = COLOR_WHITE;
+      Rect magmaRingRect = {levelUpMenuPos.x - 350.0f, contentPos.y - 45.0f, 700.0f, 90.0f};
+      if(point_in_rect(input->mousePosScreen, magmaRingRect))
+      {
+        boxColor *= 2.0f;
+      }
+      draw_sliced_sprite(SPRITE_SLICED_MENU_01, {levelUpMenuPos.x, contentPos.y}, {700.0f, 90.0f},
+                         {.color = boxColor});
+      draw_sprite(SPRITE_ICON_MAGMA_RING, contentPos, iconSize);
+      
+      Weapon* magmaRing = get_weapon(WEAPON_MAGMA_RING);
+      idx = 0;
+      if(magmaRing)
+      {
+        idx = min<int>(ArraySize(MAGMA_RING_LEVEL_DESCRIPTIONS) - 1, magmaRing->level);
+      }
+      draw_text(MAGMA_RING_LEVEL_DESCRIPTIONS[idx], contentPos + Vec2{90.0f});
+      contentPos.y += 110.0f;
+      
       if(is_key_pressed(KEY_LEFT_MOUSE))
       {
         WeaponID weaponID = WEAPON_COUNT;
@@ -412,6 +432,11 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
         if(point_in_rect(input->mousePosScreen, aoeRect))
         {
           weaponID = WEAPON_GARLIC;
+        }
+        
+        if(point_in_rect(input->mousePosScreen, magmaRingRect))
+        {
+          weaponID = WEAPON_MAGMA_RING;
         }
         
         if(weaponID < WEAPON_COUNT)
@@ -531,7 +556,6 @@ internal void update_level(float dt)
       }
     }
   }
-  
   
   // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		UPDATE DAMAGE NUMBERS START	vvvvvvvvvvvvvvvvvvvvvvvvv
   {
@@ -855,9 +879,27 @@ internal void update_level(float dt)
             
             continue;
           }
+          
+          case WEAPON_MAGMA_RING:
+          {
+            skillCooldown = 1.0f;
+            
+            if(gameState->enemies.count)
+            {
+              int enemyIdx = rand() % gameState->enemies.count;
+              aa.targetPos = gameState->enemies[enemyIdx].pos;
+              aa.pos = aa.targetPos - Vec2{0.0f, 1500.0f};
+              break;
+            }
+            else
+            {
+              w->timePassed = min(w->timePassed, skillCooldown);
+              continue;
+            }
+          }
         }
         
-        while(w->timePassed > skillCooldown)
+        while(w->timePassed >= skillCooldown)
         {
           w->timePassed -= skillCooldown;
           
@@ -923,6 +965,29 @@ internal void update_level(float dt)
           
           break;
         } 
+        
+        case WEAPON_MAGMA_RING:
+        {
+          Vec2 dir = normalize(aa->targetPos - aa->pos);
+          aa->pos += dir * dt * 1000.0f;
+          
+          Rect collisionRect = {aa->targetPos - Vec2{10.0f, 10.0f}, 20.0f, 20.0f};
+          Sprite s = get_sprite(SPRITE_EFFECT_MAGMA_PUDDLE);
+          
+          if(point_in_rect(aa->pos, collisionRect))
+          {
+            add_damaging_area(SPRITE_EFFECT_MAGMA_PUDDLE,
+                              aa->targetPos, vec_2(s.subSize) * UNIT_SCALE, 20, 1.0f);
+            
+            gameState->activeAttacks.remove_and_swap(aaIdx--);
+          }
+          else
+          {
+            draw_sprite(SPRITE_EFFECT_MAGMA_PUDDLE, aa->pos, vec_2(s.subSize) * UNIT_SCALE);
+          }
+          
+          continue;
+        }
         
         //invalid_default_case;
       }
