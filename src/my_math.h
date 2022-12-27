@@ -256,7 +256,7 @@ internal bool point_in_rect(Vec2 point, Rect rect)
           point.y <= rect.pos.y + rect.size.y);
 }
 
-internal bool circle_collision(Circle a, Circle b, float* pushout)
+internal bool circle_collision(Circle a, Circle b, float* pushout = 0)
 {
   bool result = false;
   

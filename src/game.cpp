@@ -164,9 +164,11 @@ internal void inflict_damage(Entity* e, int dmg)
   }
 }
 
-internal void add_damaging_area(SpriteID spriteID, Vec2 pos, Vec2 size, int damage, float duration)
+internal void add_damaging_area(WeaponID weaponID, SpriteID spriteID, Vec2 pos, 
+                                Vec2 size, int damage, float duration)
 {
   DamagingArea da = {};
+  da.weaponID = weaponID;
   da.spriteID = spriteID;
   da.pos = pos;
   da.size = size;
@@ -643,6 +645,99 @@ internal void update_level(float dt)
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE PICKUPS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
+  // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		HANDLE DAMAGING AREAS START		vvvvvvvvvvvvvvvvvvv
+  {
+    for(int daIdx = 0; daIdx < gameState->damagingAreas.count; daIdx++)
+    {
+      DamagingArea* da = &gameState->damagingAreas[daIdx];
+      da->timePassed += dt;
+      
+      switch(da->weaponID)
+      {
+        case WEAPON_WHIP:
+        {
+          float percentDone = da->timePassed / da->duration;
+          Vec2 size = da->size * percentDone;
+          
+          draw_sprite(da->spriteID, da->pos, size, 
+                      {.renderOptions = da->pos.x < gameState->player.pos.x? RENDER_OPTION_FLIP_X: 0});
+          
+          Rect daCollider = {da->pos - size / 2.0, size};
+          
+          // TODO: Only the first one is blue!
+          //draw_quad(daCollider.pos, daCollider.size, COLOR_BLUE);
+          
+          for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
+          {
+            Entity* enemy = &gameState->enemies[enemyIdx];
+            Circle enemyCollider = get_collider(*enemy);
+            
+            if(has_hit_enemy(*da, enemy->ID))
+            {
+              continue;
+            }
+            
+            if(rect_circle_collision(daCollider, enemyCollider))
+            {
+              // Damage 
+              inflict_damage(enemy, da->damage);
+              
+              if(enemy->hp <= 0)
+              {
+                gameState->enemies.remove_and_swap(enemyIdx--);
+                continue;
+              }
+              
+              // Push away
+              enemy->pushTime = 1.0f;
+              Vec2 pushDir = normalize(enemy->pos - da->pos);
+              enemy->pushDirection = pushDir * 10.0f;
+              
+              // Add to hit targets
+              da->hitEnemyIDs.add(enemy->ID);
+            }
+            
+          }
+          
+          break;
+        }
+        
+        case WEAPON_MAGMA_RING:
+        {
+          draw_sprite(da->spriteID, da->pos, da->size);
+          Circle puddleCollider = {da->pos, da->size.x / 2.0f};
+          
+          for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
+          {
+            Entity* enemy = &gameState->enemies[enemyIdx];
+            Circle enemyCollider = get_collider(*enemy);
+            
+            if(circle_collision(enemyCollider, puddleCollider)
+               && enemy->magmaPuddleHitTimer <= 0.0f)
+            {
+              inflict_damage(enemy, da->damage);
+              if(enemy->hp <= 0)
+              {
+                gameState->enemies.remove_and_swap(enemyIdx--);
+                continue;
+              }
+              enemy->magmaPuddleHitTimer = 0.5f;
+            }
+          }
+          
+          break;
+        }
+      }
+      
+      if(da->timePassed > da->duration)
+      {
+        gameState->damagingAreas.remove_and_swap(daIdx--);
+        continue;
+      }
+    }
+  }
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		HANDLE DAMAGING AREAS END		^^^^^^^^^^^^^^^^^^^^^^
+  
   for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
   {
     Entity* enemy = &gameState->enemies[enemyIdx];
@@ -650,6 +745,7 @@ internal void update_level(float dt)
     float attackDelay = 0.5f;
     enemy->attackTime = min(enemy->attackTime + dt, attackDelay);
     enemy->garlicHitTimer = max(enemy->garlicHitTimer - dt, 0.0f);
+    enemy->magmaPuddleHitTimer = max(enemy->magmaPuddleHitTimer - dt, 0.0f);
     
     // Check if colliding with player
     {
@@ -886,16 +982,32 @@ internal void update_level(float dt)
             
             if(gameState->enemies.count)
             {
-              int enemyIdx = rand() % gameState->enemies.count;
-              aa.targetPos = gameState->enemies[enemyIdx].pos;
-              aa.pos = aa.targetPos - Vec2{0.0f, 1500.0f};
-              break;
+              if(w->timePassed >= skillCooldown)
+              {
+                w->timePassed -= skillCooldown;
+                
+                float spawnRadius = 250.0f;
+                int spawnCount = w->level < 3? 1 : w->level < 6? 2 : 3;
+                
+                for(int spawnIdx = 0; spawnIdx < spawnCount; spawnIdx++)
+                {
+                  float randomX = (float)(rand() % (int)(spawnRadius * 2.0f)) - spawnRadius;
+                  float randomY = (float)(rand() % (int)(spawnRadius * 2.0f)) - spawnRadius;
+                  
+                  aa.targetPos = gameState->player.pos + Vec2{randomX, randomY};
+                  aa.pos = aa.targetPos - Vec2{0.0f, 1500.0f};
+                  
+                  // Add active weapon
+                  gameState->activeAttacks.add(aa);
+                }
+              }
             }
             else
             {
               w->timePassed = min(w->timePassed, skillCooldown);
-              continue;
             }
+            
+            continue;
           }
         }
         
@@ -958,7 +1070,7 @@ internal void update_level(float dt)
           {
             // Spawn Whip
             Sprite s = get_sprite(SPRITE_EFFECT_WHIP);
-            add_damaging_area(SPRITE_EFFECT_WHIP, 
+            add_damaging_area(WEAPON_WHIP, SPRITE_EFFECT_WHIP, 
                               aa->pos + offsets[whip->currentSlashCount++], 
                               vec_2(s.subSize) * 2.0f, aa->damage, 0.25f); 
           }
@@ -971,19 +1083,25 @@ internal void update_level(float dt)
           Vec2 dir = normalize(aa->targetPos - aa->pos);
           aa->pos += dir * dt * 1000.0f;
           
+          Weapon* w = get_weapon(WEAPON_MAGMA_RING);
+          float aoeScale = w->level < 2? 1.0f: 1.3f;
+          float duration = w->level < 5? 2.5f: 3.125f;
+          int damage = w->level < 4? 20 : 30;
+          
           Rect collisionRect = {aa->targetPos - Vec2{10.0f, 10.0f}, 20.0f, 20.0f};
-          Sprite s = get_sprite(SPRITE_EFFECT_MAGMA_PUDDLE);
           
           if(point_in_rect(aa->pos, collisionRect))
           {
-            add_damaging_area(SPRITE_EFFECT_MAGMA_PUDDLE,
-                              aa->targetPos, vec_2(s.subSize) * UNIT_SCALE, 20, 1.0f);
+            Sprite s = get_sprite(SPRITE_EFFECT_MAGMA_PUDDLE);
+            add_damaging_area(WEAPON_MAGMA_RING, SPRITE_EFFECT_MAGMA_PUDDLE, aa->targetPos, 
+                              vec_2(s.subSize) * UNIT_SCALE * aoeScale, damage, duration);
             
             gameState->activeAttacks.remove_and_swap(aaIdx--);
           }
           else
           {
-            draw_sprite(SPRITE_EFFECT_MAGMA_PUDDLE, aa->pos, vec_2(s.subSize) * UNIT_SCALE);
+            Sprite s = get_sprite(SPRITE_EFFECT_MAGMA_BALL);
+            draw_sprite(SPRITE_EFFECT_MAGMA_BALL, aa->pos, vec_2(s.subSize) * UNIT_SCALE);
           }
           
           continue;
@@ -1002,67 +1120,6 @@ internal void update_level(float dt)
     }
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		ACTIVE ATTACKS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  
-  
-  // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		HANDLE DAMAGING AREAS START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
-  {
-    for(int daIdx = 0; daIdx < gameState->damagingAreas.count; daIdx++)
-    {
-      DamagingArea* da = &gameState->damagingAreas[daIdx];
-      
-      float percentDone = da->timePassed / da->duration;
-      Vec2 size = da->size * percentDone;
-      
-      
-      draw_sprite(da->spriteID, da->pos, size, 
-                  {.renderOptions = da->pos.x < gameState->player.pos.x? RENDER_OPTION_FLIP_X: 0});
-      
-      da->timePassed += dt;
-      if(da->timePassed > da->duration)
-      {
-        gameState->damagingAreas.remove_and_swap(daIdx--);
-        continue;
-      }
-      
-      Rect daCollider = {da->pos - size / 2.0, size};
-      
-      // TODO: Only the first one is blue!
-      //draw_quad(daCollider.pos, daCollider.size, COLOR_BLUE);
-      
-      for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
-      {
-        Entity* enemy = &gameState->enemies[enemyIdx];
-        Circle enemyCollider = get_collider(*enemy);
-        
-        if(has_hit_enemy(*da, enemy->ID))
-        {
-          continue;
-        }
-        
-        if(rect_circle_collision(daCollider, enemyCollider))
-        {
-          // Damage 
-          inflict_damage(enemy, da->damage);
-          
-          if(enemy->hp <= 0)
-          {
-            gameState->enemies.remove_and_swap(enemyIdx--);
-            continue;
-          }
-          
-          // Push away
-          enemy->pushTime = 1.0f;
-          Vec2 pushDir = normalize(enemy->pos - da->pos);
-          enemy->pushDirection = pushDir * 10.0f;
-          
-          // Add to hit targets
-          da->hitEnemyIDs.add(enemy->ID);
-        }
-      }
-      
-    }
-  }
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		HANDLE DAMAGING AREAS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
   // Exp Bar
   {

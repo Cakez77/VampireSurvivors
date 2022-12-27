@@ -36,6 +36,7 @@ struct Entity
   float moveSpeed = 100.0f;
   float attackTime;
   float garlicHitTimer;
+  float magmaPuddleHitTimer;
 };
 
 enum WeaponID
@@ -100,6 +101,7 @@ struct Player
 
 struct DamagingArea
 {
+  WeaponID weaponID;
   SpriteID spriteID;
   float timePassed;
   float duration;
