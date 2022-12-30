@@ -215,6 +215,11 @@ internal Vec2 vec_2(IVec2 v)
   return {(float)v.x, (float)v.y};
 }
 
+internal Vec2 vec_2(int number)
+{
+  return {(float)number, (float)number};
+}
+
 internal float length(Vec2 v)
 {
   return (float)sqrt((v.x * v.x) + (v.y * v.y));

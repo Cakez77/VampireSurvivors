@@ -19,6 +19,14 @@ global_variable GameState* gameState = 0;
 global_variable RenderData* renderData = 0;
 #include "render_interface.cpp"
 
+internal Vec2 get_screen_pos(Vec2 pos)
+{
+  Vec2 screenMiddle = vec_2(WORLD_SIZE) / 2.0f;
+  Vec2 screenPos = screenMiddle + pos - gameState->player.pos;
+  
+  return screenPos;
+}
+
 internal void spawn_enemy(EnemyType type, Vec2 pos)
 {
   Entity e = {};
@@ -210,6 +218,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     }
   }
   
+#if 0
   // Draw Background
   {
     //WORLD SIZE {1600, 900};
@@ -222,7 +231,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     {
       for(int colIdx = 0; colIdx < 14; colIdx++)
       {
-        draw_sprite(SPRITE_TILE_GRASS_01, tilePos, tileSize, 
+        draw_sprite(TILE_01, tilePos, tileSize, 
                     {.renderOptions = RENDER_OPTION_TOP_LEFT});
         tilePos.x += tileSize.x;
       }
@@ -231,6 +240,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       tilePos.y += tileSize.y;
     }
   }
+#endif
   
   switch(gameState->state)
   {
@@ -342,8 +352,13 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
           }
         }
         
+        // One Tile is 64x64
+        int chunkWidth = MAP_CHUNK_TILE_COUNT * 64;
+        int mapWidth = MAP_CHUNK_COUNT * chunkWidth;
         
-        gameState->player.pos = vec_2(input->screenSize) / 2.0f;
+        // Place the Player in the middle of the Map, meaning
+        // in the middle of a 15x15 chunk Grid, 
+        gameState->player.pos = vec_2(mapWidth / 2);
         gameState->playerScreenEdgeDist = length(vec_2(WORLD_SIZE - WORLD_SIZE / 2)) + 50.0f;
         
         
@@ -569,7 +584,8 @@ internal void update_level(float dt)
       
       char numberText[16] = {};
       sprintf(numberText, "%d", dn->value);
-      draw_text(numberText, dn->pos);
+      
+      draw_text(numberText, get_screen_pos(dn->pos));
       
       dn->timer += dt;
       dn->pos.y -= 20.0f * dt;
@@ -622,7 +638,7 @@ internal void update_level(float dt)
       }
       
       Sprite s = get_sprite(spriteID);
-      draw_sprite(spriteID, p->pos, vec_2(s.subSize) * 1.5f);
+      draw_sprite(spriteID, get_screen_pos(p->pos), vec_2(s.subSize) * 1.5f);
       
       if(point_in_circle(p->pos, playerPickupCollider))
       {
@@ -659,7 +675,7 @@ internal void update_level(float dt)
           float percentDone = da->timePassed / da->duration;
           Vec2 size = da->size * percentDone;
           
-          draw_sprite(da->spriteID, da->pos, size, 
+          draw_sprite(da->spriteID, get_screen_pos(da->pos), size, 
                       {.renderOptions = da->pos.x < gameState->player.pos.x? RENDER_OPTION_FLIP_X: 0});
           
           Rect daCollider = {da->pos - size / 2.0, size};
@@ -704,7 +720,7 @@ internal void update_level(float dt)
         
         case WEAPON_MAGMA_RING:
         {
-          draw_sprite(da->spriteID, da->pos, da->size);
+          draw_sprite(da->spriteID, get_screen_pos(da->pos), da->size);
           Circle puddleCollider = {da->pos, da->size.x / 2.0f};
           
           for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
@@ -835,7 +851,9 @@ internal void update_level(float dt)
     // Draw
     {
       Sprite s = get_sprite(enemy->spriteID);
-      draw_sprite(enemy->spriteID, enemy->pos, vec_2(s.subSize) * enemy->scale, {.color = enemy->color,
+      draw_sprite(enemy->spriteID, get_screen_pos(enemy->pos), 
+                  vec_2(s.subSize) * enemy->scale, 
+                  {.color = enemy->color,
                     .renderOptions = enemy->desiredDirection.x > 0.0f? RENDER_OPTION_FLIP_X: 0});
     }
   }
@@ -941,7 +959,7 @@ internal void update_level(float dt)
             radius *= w->level < 2? 1.0f : w->level < 3? 1.1f: w->level < 5? 1.25f: 1.45f;
             
             Circle garlicCollider = {gameState->player.pos, radius};
-            draw_sprite(SPRITE_EFFECT_GARLIC, gameState->player.pos, vec_2(radius * 2.0f));
+            draw_sprite(SPRITE_EFFECT_GARLIC, vec_2(input->screenSize) / 2.0f, vec_2(radius * 2.0f));
             
             
             for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
@@ -1026,16 +1044,18 @@ internal void update_level(float dt)
     {
       float playerScale = UNIT_SCALE + sinf2(gameState->totalTime * 10.0f) * 0.125f;
       Sprite s = get_sprite(p->spriteID);
-      draw_sprite(p->spriteID, p->pos, vec_2(s.subSize) * playerScale,
+      draw_sprite(p->spriteID, vec_2(input->screenSize)/2.0f, vec_2(s.subSize) * playerScale,
                   {.renderOptions = p->flipX ? RENDER_OPTION_FLIP_X : 0});
       // Hp Bar
       {
+        Vec2 barPos = vec_2(input->screenSize) / 2.0f;
+        
         // Background
-        draw_quad(p->pos + Vec2{0.0f, 50.0f}, {69.0f, 10.0f}, {.color = COLOR_BLACK});
+        draw_quad(barPos + Vec2{0.0f, 50.0f}, {69.0f, 10.0f}, {.color = COLOR_BLACK});
         
         // Actual HP
         float hpPercent = (float)p->hp / (float)p->maxHP;
-        draw_quad(p->pos + Vec2{-(1.0f - hpPercent) * 69.0f / 2.0f, 50.0f}, 
+        draw_quad(barPos + Vec2{-(1.0f - hpPercent) * 69.0f / 2.0f, 50.0f}, 
                   {69.0f * hpPercent, 10.0f}, {.color = COLOR_RED});
       }
     }
@@ -1101,7 +1121,8 @@ internal void update_level(float dt)
           else
           {
             Sprite s = get_sprite(SPRITE_EFFECT_MAGMA_BALL);
-            draw_sprite(SPRITE_EFFECT_MAGMA_BALL, aa->pos, vec_2(s.subSize) * UNIT_SCALE);
+            draw_sprite(SPRITE_EFFECT_MAGMA_BALL, get_screen_pos(aa->pos), 
+                        vec_2(s.subSize) * UNIT_SCALE);
           }
           
           continue;

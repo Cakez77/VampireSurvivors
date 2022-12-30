@@ -35,7 +35,8 @@ enum SpriteID
   SPRITE_ICON_MORNING_STAR,
   SPRITE_ICON_MAGMA_RING,
   SPRITE_SLICED_MENU_01,
-  SPRITE_TILE_GRASS_01,
+  TILE_01,
+  TILE_02,
   
   SPRITE_COUNT,
 };
@@ -269,9 +270,18 @@ internal Sprite get_sprite(SpriteID spriteID)
       break;
     }
     
-    case SPRITE_TILE_GRASS_01:
+    case TILE_01:
     {
-      s.atlasOffset = {96, 64};
+      s.atlasOffset = {0, 400};
+      s.size = {64, 64};
+      s.subSize = {64, 64};
+      
+      break;
+    }
+    
+    case TILE_02:
+    {
+      s.atlasOffset = {64, 400};
       s.size = {64, 64};
       s.subSize = {64, 64};
       
