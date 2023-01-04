@@ -37,6 +37,7 @@ enum SpriteID
   SPRITE_SLICED_MENU_01,
   TILE_01,
   TILE_02,
+  TILE_03,
   
   SPRITE_COUNT,
 };
@@ -282,6 +283,15 @@ internal Sprite get_sprite(SpriteID spriteID)
     case TILE_02:
     {
       s.atlasOffset = {64, 400};
+      s.size = {64, 64};
+      s.subSize = {64, 64};
+      
+      break;
+    }
+    
+    case TILE_03:
+    {
+      s.atlasOffset = {128, 400};
       s.size = {64, 64};
       s.subSize = {64, 64};
       

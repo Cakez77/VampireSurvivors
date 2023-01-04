@@ -218,6 +218,77 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     }
   }
   
+  // Draw Background
+  {
+    // Position inside the chunk
+    Vec2 tileSize = Vec2{64.0f, 64.0f} * UNIT_SCALE;
+    float chunkWidth = (float)MAP_CHUNK_TILE_COUNT * tileSize.x;
+    Vec2 playerPos = gameState->player.pos;
+    
+    // Which Tile to use
+    float playerChunkOffsetX = fmodf(playerPos.x, chunkWidth);
+    float playerChunkOffsetY = fmodf(playerPos.y, chunkWidth);
+    int chunkCol = (int)(playerChunkOffsetX / tileSize.x);
+    int chunkRow = (int)(playerChunkOffsetY / tileSize.y);
+    
+    if(chunkRow < 0)
+    {
+      chunkRow = -chunkRow;
+    }
+    
+    if(chunkCol < 0)
+    {
+      chunkCol = -chunkCol;
+    }
+    
+    Vec2 screenMiddle = vec_2(WORLD_SIZE) / 2.0f;
+    
+    // Tile Offset Player
+    float playerTileOffsetX = fmodf(playerPos.x, tileSize.x);
+    float playerTileOffsetY = fmodf(playerPos.y, tileSize.y);
+    
+    Vec2 halfTileSize = tileSize / 2.0f;
+    for(int tileColIdx = -13; tileColIdx <= 13; tileColIdx++)
+    {
+      for(int tileRowIdx = -8; tileRowIdx <= 8; tileRowIdx++)
+      {
+        Vec2 tilePos = 
+          screenMiddle - 
+          Vec2{playerTileOffsetX, playerTileOffsetY} - 
+          halfTileSize;
+        
+        tilePos.x += (float)tileColIdx * tileSize.x;
+        tilePos.y += (float)tileRowIdx * tileSize.y;
+        
+        int subRowIdx = chunkRow + tileRowIdx;
+        if(subRowIdx < 0)
+        {
+          subRowIdx += MAP_CHUNK_TILE_COUNT;
+        }
+        
+        if(subRowIdx >= MAP_CHUNK_TILE_COUNT)
+        {
+          subRowIdx -= MAP_CHUNK_TILE_COUNT;
+        }
+        
+        int subColIdx = chunkCol + tileColIdx;
+        if(subColIdx < 0)
+        {
+          subColIdx += MAP_CHUNK_TILE_COUNT;
+        }
+        
+        if(subColIdx >= MAP_CHUNK_TILE_COUNT)
+        {
+          subColIdx -= MAP_CHUNK_TILE_COUNT;
+        }
+        
+        SpriteID spriteIDTile = ChunkTiles[subRowIdx][subColIdx];
+        draw_sprite(spriteIDTile, tilePos, tileSize,
+                    {.renderOptions = RENDER_OPTION_TOP_LEFT});
+      }
+    }
+  }
+  
 #if 0
   // Draw Background
   {
