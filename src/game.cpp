@@ -190,6 +190,22 @@ internal void add_damaging_area(WeaponID weaponID, SpriteID spriteID, Vec2 pos,
 //#############################################################
 //                  Define funcions
 //#############################################################
+internal void draw_exp_bar()
+{
+  // Exp Bar
+  {
+    draw_sprite(SPRITE_EXP_BAR_LEFT, {4.0f, 16.0f}, {8.0f, 32.0f});
+    draw_sprite(SPRITE_EXP_BAR_MIDDLE, {input->screenSize.x / 2.0f, 16.0f}, 
+                {input->screenSize.x - 16.0f, 32.0f});
+    draw_sprite(SPRITE_EXP_BAR_RIGHT, {input->screenSize.x - 4.0f, 16.0f}, {8.0f, 32.0f});
+    
+    int level = min(gameState->player.level, ArraySize(expTable) - 1);
+    float expNeeded = (float)expTable[level];
+    float barSizeX = (input->screenSize.x - 15.0f) * (float)gameState->player.exp / expNeeded;
+    draw_sprite(SPRITE_WHITE, {barSizeX / 2.0f + 6.0f, 15.0f}, {barSizeX, 18.0f},{.color = COLOR_BLUE});
+  }
+}
+
 internal void update_level(float dt);
 
 
@@ -228,6 +244,20 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     // Which Tile to use
     float playerChunkOffsetX = fmodf(playerPos.x, chunkWidth);
     float playerChunkOffsetY = fmodf(playerPos.y, chunkWidth);
+    
+    // Loop inside the Chunk
+    {
+      if(playerChunkOffsetX < 0.0f)
+      {
+        playerChunkOffsetX += chunkWidth;
+      }
+      
+      if(playerChunkOffsetY < 0.0f)
+      {
+        playerChunkOffsetY += chunkWidth;
+      }
+    }
+    
     int chunkCol = (int)(playerChunkOffsetX / tileSize.x);
     int chunkRow = (int)(playerChunkOffsetY / tileSize.y);
     
@@ -246,6 +276,19 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     // Tile Offset Player
     float playerTileOffsetX = fmodf(playerPos.x, tileSize.x);
     float playerTileOffsetY = fmodf(playerPos.y, tileSize.y);
+    
+    // Loop inside the Tile
+    {
+      if(playerTileOffsetX < 0.0f)
+      {
+        playerTileOffsetX += tileSize.x;
+      }
+      
+      if(playerTileOffsetY < 0.0f)
+      {
+        playerTileOffsetY += tileSize.y;
+      }
+    }
     
     Vec2 halfTileSize = tileSize / 2.0f;
     for(int tileColIdx = -13; tileColIdx <= 13; tileColIdx++)
@@ -288,30 +331,6 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       }
     }
   }
-  
-#if 0
-  // Draw Background
-  {
-    //WORLD SIZE {1600, 900};
-    //1600 / 128 
-    // Random Start Pos that is outside the Screen
-    float startX = -13.0f;
-    Vec2 tilePos = {startX, -13.0f};
-    Vec2 tileSize = Vec2{64.0f, 64.0f} * 2.0f;
-    for(int rowIdx = 0; rowIdx < 8; rowIdx++)
-    {
-      for(int colIdx = 0; colIdx < 14; colIdx++)
-      {
-        draw_sprite(TILE_01, tilePos, tileSize, 
-                    {.renderOptions = RENDER_OPTION_TOP_LEFT});
-        tilePos.x += tileSize.x;
-      }
-      
-      tilePos.x = startX;
-      tilePos.y += tileSize.y;
-    }
-  }
-#endif
   
   switch(gameState->state)
   {
@@ -440,6 +459,22 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     
     case GAME_STATE_LEVEL_UP:
     {
+      draw_exp_bar();
+      
+      // Draw Enemies
+      {
+        for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
+        {
+          Entity enemy = gameState->enemies[enemyIdx];
+          
+          Sprite s = get_sprite(enemy.spriteID);
+          draw_sprite(enemy.spriteID, get_screen_pos(enemy.pos), 
+                      vec_2(s.subSize) * enemy.scale, 
+                      {.color = enemy.color,
+                        .renderOptions = enemy.desiredDirection.x > 0.0f? RENDER_OPTION_FLIP_X: 0});
+        }
+      }
+      
       Vec4 boxColor = COLOR_WHITE;
       Vec2 levelUpMenuSize = {800.0f, 600.0f};
       Vec2 levelUpMenuPos = vec_2(input->screenSize) / 2.0f;
@@ -568,29 +603,6 @@ internal void update_level(float dt)
   gameState->totalTime += dt;
   gameState->spawnTimer += dt / 1.0f;
   
-  // EXP Table, needed by Pickups and EXP Bar
-  int expTable [] = 
-  {
-    0,
-    20,
-    40,
-    60,
-    80,
-    100,
-    120,
-    140,
-    160,
-    180,
-    200,
-    220,
-    240,
-    260,
-    280,
-    300,
-    320,
-    340,
-  };
-  
   // Spawning System
   {
     struct SpawnData
@@ -645,6 +657,67 @@ internal void update_level(float dt)
     }
   }
   
+  // Partition The enemies into Chunks
+  {
+    // Clear all the chunks
+    for(int chunkColIdx = 0; chunkColIdx < WORLD_GRID_SIZE.x; chunkColIdx++)
+    {
+      for(int chunkRowIdx = 0; chunkRowIdx < WORLD_GRID_SIZE.y; chunkRowIdx++)
+      {
+        gameState->worldGrid[chunkColIdx][chunkRowIdx].enemyIndices.clear();
+      }
+    }
+    
+    for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
+    {
+      Entity* enemy  = &gameState->enemies[enemyIdx];
+      
+      if(enemy->hp <= 0)
+      {
+        gameState->enemies.remove_and_swap(enemyIdx--);
+        continue;
+      }
+      
+      float chunkSize = 100.0f;
+      
+      // The grid goes from (-200, -200) to (1800, 1100)
+      Vec2 relativePos = enemy->pos - gameState->player.pos + Vec2{1000.0f, 650.0f};
+      
+      if(relativePos.x < 0.0f) // We are too far to the left side of the player
+      {
+        enemy->pos.x = gameState->player.pos.x + WORLD_SIZE.x / 2.0f;
+      }
+      
+      if(relativePos.x >= 2000.0f) // We are too far to the right side of the player
+      {
+        enemy->pos.x = gameState->player.pos.x - WORLD_SIZE.x / 2.0f;
+      }
+      
+      if(relativePos.y < 0.0f) // We are too far to the left side of the player
+      {
+        enemy->pos.y = gameState->player.pos.y + WORLD_SIZE.y / 2.0f;
+      }
+      
+      if(relativePos.y >= 1300.0f) // We are too far to the right side of the player
+      {
+        enemy->pos.y = gameState->player.pos.y - WORLD_SIZE.y / 2.0f;
+      }
+      
+      relativePos = enemy->pos - gameState->player.pos + Vec2{1000.0f, 650.0f};
+      
+      int chunkCol = (int)(relativePos.x / chunkSize);
+      int chunkRow = (int)(relativePos.y / chunkSize);
+      
+      assert(chunkCol >= 0);
+      assert(chunkCol < WORLD_GRID_SIZE.x);
+      assert(chunkRow >= 0);
+      assert(chunkRow < WORLD_GRID_SIZE.y);
+      
+      WorldChunk* wc = &gameState->worldGrid[chunkCol][chunkRow];
+      wc->enemyIndices.add(enemyIdx);
+    }
+  }
+  
   // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		UPDATE DAMAGE NUMBERS START	vvvvvvvvvvvvvvvvvvvvvvvvv
   {
     for(int damageNumberIdx = 0; 
@@ -666,8 +739,6 @@ internal void update_level(float dt)
         gameState->damageNumbers.remove_and_swap(damageNumberIdx--);
         continue;
       }
-      
-      
     }
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE DAMAGE NUMBERS END		^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -696,12 +767,12 @@ internal void update_level(float dt)
           if(p->triggered)
           {
             Vec2 dir = normalize(gameState->player.pos - p->pos);
-            p->vel += dir * dt * 500;
+            p->vel += dir * dt * 500.0f;
             
             // @Note(tkap, 29/11/2022): Capping the speed
             p->vel = p->vel * 0.9f;
             
-            p->pos += p->vel * dt * 10;
+            p->pos += p->vel * dt * 100.0f;
           }
           spriteID = SPRITE_CRYSTAL;
           break;
@@ -771,7 +842,6 @@ internal void update_level(float dt)
               
               if(enemy->hp <= 0)
               {
-                gameState->enemies.remove_and_swap(enemyIdx--);
                 continue;
               }
               
@@ -805,7 +875,6 @@ internal void update_level(float dt)
               inflict_damage(enemy, da->damage);
               if(enemy->hp <= 0)
               {
-                gameState->enemies.remove_and_swap(enemyIdx--);
                 continue;
               }
               enemy->magmaPuddleHitTimer = 0.5f;
@@ -825,109 +894,143 @@ internal void update_level(float dt)
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		HANDLE DAMAGING AREAS END		^^^^^^^^^^^^^^^^^^^^^^
   
-  for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
+  // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		UPDATE ENEMIES START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
   {
-    Entity* enemy = &gameState->enemies[enemyIdx];
-    
-    float attackDelay = 0.5f;
-    enemy->attackTime = min(enemy->attackTime + dt, attackDelay);
-    enemy->garlicHitTimer = max(enemy->garlicHitTimer - dt, 0.0f);
-    enemy->magmaPuddleHitTimer = max(enemy->magmaPuddleHitTimer - dt, 0.0f);
-    
-    // Check if colliding with player
+    // New Partition Update Loop
     {
-      Circle collider = get_collider(*enemy);
-      Circle playerCollider = get_collider(gameState->player);
-      if(circle_collision(collider, playerCollider, 0))
+      for(int chunkColIdx = 0; chunkColIdx < WORLD_GRID_SIZE.x; chunkColIdx++)
       {
-        if(enemy->attackTime >= attackDelay)
+        for(int chunkRowIdx = 0; chunkRowIdx < WORLD_GRID_SIZE.y; chunkRowIdx++)
         {
-          gameState->player.hp -= enemy->attack;
-          enemy->attackTime = 0.0f;
+          WorldChunk wc = gameState->worldGrid[chunkColIdx][chunkRowIdx];
           
-          if(gameState->player.hp <= 0)
-          {
-            init_game(gameState, input, renderData);
-            return;
-          }
-        }
-      }
-    }
-    
-    enemy->pushTime -= dt;
-    if(enemy->pushTime <= 0.0f)
-    {
-      enemy->pushDirection = {};
-    }
-    
-    // 50 Pixels per second
-    float movementDistance = enemy->moveSpeed;
-    
-    Vec2 direction = normalize(gameState->player.pos - enemy->pos);
-    enemy->desiredDirection = direction * movementDistance;
-    
-    // Resolve Collisions
-    {
-      // Reset seperation Force
-      enemy->seperationForce = {};
-      
-      for(int neighbourIdx = 0; neighbourIdx < gameState->enemies.count; neighbourIdx++)
-      {
-        // Skip yourself
-        if(neighbourIdx == enemyIdx)
-        {
-          continue;
-        }
-        
-        Entity neighbour = gameState->enemies[neighbourIdx];
-        
-        Vec2 neighbourDir = enemy->pos - neighbour.pos;
-        float neighbourDist = length(neighbourDir);
-        
-        // Are the two colliding?
-        float range = neighbour.collider.radius + neighbour.collider.radius;
-        if(neighbourDist < range)
-        {
-          Vec2 seperationDir = {};
+          Vec2 chunkOffset = 
+            Vec2{-200.0f + 100.0f * (float)chunkColIdx, -200 + 100.0f * (float)chunkRowIdx};
           
-          if(neighbourDist == 0.0f)
+          Vec2 chunkWorldPos = gameState->player.pos + chunkOffset;
+          Rect chunkRect = {chunkWorldPos, 100.0f, 100.0f};
+          
+          for(int chunkEnemyIdx = 0; chunkEnemyIdx < wc.enemyIndices.count; chunkEnemyIdx++)
           {
-            Vec2 randomDirections[] = 
+            int enemyIdx = wc.enemyIndices[chunkEnemyIdx];
+            Entity* enemy = &gameState->enemies[enemyIdx];
+            
+            float attackDelay = 0.5f;
+            enemy->attackTime = min(enemy->attackTime + dt, attackDelay);
+            enemy->garlicHitTimer = max(enemy->garlicHitTimer - dt, 0.0f);
+            enemy->magmaPuddleHitTimer = max(enemy->magmaPuddleHitTimer - dt, 0.0f);
+            
+            // Check if colliding with player
             {
-              {1.0f, 0.0f}, // To the right
-              {-1.0f, 0.0f}, // To the Left
-            };
-            neighbourDist = EPSILON;
-            seperationDir = randomDirections[neighbourIdx > enemyIdx];
+              Circle collider = get_collider(*enemy);
+              Circle playerCollider = get_collider(gameState->player);
+              if(circle_collision(collider, playerCollider, 0))
+              {
+                if(enemy->attackTime >= attackDelay)
+                {
+                  gameState->player.hp -= enemy->attack;
+                  enemy->attackTime = 0.0f;
+                  
+                  if(gameState->player.hp <= 0)
+                  {
+                    init_game(gameState, input, renderData);
+                    return;
+                  }
+                }
+              }
+            }
+            
+            enemy->pushTime -= dt;
+            if(enemy->pushTime <= 0.0f)
+            {
+              enemy->pushDirection = {};
+            }
+            
+            float movementDistance = enemy->moveSpeed;
+            Vec2 direction = normalize(gameState->player.pos - enemy->pos);
+            enemy->desiredDirection = direction * movementDistance;
+            
+            // Resolve Collisions
+            {
+              // Reset seperation Force
+              enemy->seperationForce = {};
+              
+              // Look at surrounding chunks 3x3
+              for(int chunkColOffset = -1; chunkColOffset < 2; chunkColOffset++)
+              {
+                for(int chunkRowOffset = -1; chunkRowOffset < 2; chunkRowOffset++)
+                {
+                  int subChunkColIdx = clamp(chunkColIdx + chunkColOffset, 0, WORLD_GRID_SIZE.x - 1);
+                  int subChunkRowIdx = clamp(chunkRowIdx + chunkRowOffset, 0, WORLD_GRID_SIZE.y - 1);
+                  
+                  WorldChunk subChunk = gameState->worldGrid[subChunkColIdx][subChunkRowIdx];
+                  
+                  for(int subEnemyIdx = 0; subEnemyIdx < subChunk.enemyIndices.count; subEnemyIdx++)
+                  {
+                    int neighbourIdx = subChunk.enemyIndices[subEnemyIdx];
+                    
+                    // Skip yourself
+                    if(neighbourIdx == enemyIdx)
+                    {
+                      continue;
+                    }
+                    
+                    Entity neighbour = gameState->enemies[neighbourIdx];
+                    
+                    Vec2 neighbourDir = enemy->pos - neighbour.pos;
+                    float neighbourDist = length(neighbourDir);
+                    
+                    // Are the two colliding?
+                    float range = neighbour.collider.radius + neighbour.collider.radius;
+                    if(neighbourDist < range)
+                    {
+                      Vec2 seperationDir = {};
+                      
+                      if(neighbourDist == 0.0f)
+                      {
+                        Vec2 randomDirections[] = 
+                        {
+                          {1.0f, 0.0f}, // To the right
+                          {-1.0f, 0.0f}, // To the Left
+                        };
+                        neighbourDist = EPSILON;
+                        seperationDir = randomDirections[neighbourIdx > enemyIdx];
+                      }
+                      else
+                      {
+                        seperationDir = neighbourDir / neighbourDist;
+                      }
+                      
+                      float seperationStrength = (range - neighbourDist) / range;
+                      enemy->seperationForce += seperationDir * seperationStrength;
+                    }
+                  }
+                }
+              }
+            }
+            
+            // Move the Enemy
+            {
+              float pushForce = ease_in_quad(enemy->pushTime);
+              enemy->pos += (enemy->pushDirection * pushForce * 50.0f + 
+                             enemy->desiredDirection + 
+                             enemy->seperationForce * 1000.0f) * dt;
+            }
+            
+            // Draw
+            {
+              Sprite s = get_sprite(enemy->spriteID);
+              draw_sprite(enemy->spriteID, get_screen_pos(enemy->pos), 
+                          vec_2(s.subSize) * enemy->scale, 
+                          {.color = enemy->color,
+                            .renderOptions = enemy->desiredDirection.x > 0.0f? RENDER_OPTION_FLIP_X: 0});
+            }
           }
-          else
-          {
-            seperationDir = neighbourDir / neighbourDist;
-          }
-          
-          float seperationStrength = (range - neighbourDist) / range;
-          enemy->seperationForce += seperationDir * seperationStrength;
         }
       }
-    }
-    
-    // Move the Enemy
-    {
-      float pushForce = ease_in_quad(enemy->pushTime);
-      enemy->pos += (enemy->pushDirection * pushForce * 50.0f + 
-                     enemy->desiredDirection + 
-                     enemy->seperationForce * 1000.0f) * dt;
-    }
-    
-    // Draw
-    {
-      Sprite s = get_sprite(enemy->spriteID);
-      draw_sprite(enemy->spriteID, get_screen_pos(enemy->pos), 
-                  vec_2(s.subSize) * enemy->scale, 
-                  {.color = enemy->color,
-                    .renderOptions = enemy->desiredDirection.x > 0.0f? RENDER_OPTION_FLIP_X: 0});
     }
   }
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		UPDATE ENEMIES END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
   // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		UPDATE PLAYER START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
   {
@@ -1047,7 +1150,6 @@ internal void update_level(float dt)
                   
                   if(e->hp <= 0)
                   {
-                    gameState->enemies.remove_and_swap(enemyIdx--);
                     continue;
                   }
                   
@@ -1211,18 +1313,7 @@ internal void update_level(float dt)
       }
     }
   }
-  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		ACTIVE ATTACKS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		ACTIVE ATTACKS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   
-  // Exp Bar
-  {
-    draw_sprite(SPRITE_EXP_BAR_LEFT, {4.0f, 16.0f}, {8.0f, 32.0f});
-    draw_sprite(SPRITE_EXP_BAR_MIDDLE, {input->screenSize.x / 2.0f, 16.0f}, 
-                {input->screenSize.x - 16.0f, 32.0f});
-    draw_sprite(SPRITE_EXP_BAR_RIGHT, {input->screenSize.x - 4.0f, 16.0f}, {8.0f, 32.0f});
-    
-    int level = min(gameState->player.level, ArraySize(expTable) - 1);
-    float expNeeded = (float)expTable[level];
-    float barSizeX = (input->screenSize.x - 15.0f) * (float)gameState->player.exp / expNeeded;
-    draw_sprite(SPRITE_WHITE, {barSizeX / 2.0f + 6.0f, 15.0f}, {barSizeX, 18.0f},{.color = COLOR_BLUE});
-  }
+  draw_exp_bar();
 }

@@ -69,4 +69,14 @@ struct Array
     assert(idx < count);
     elements[idx] = elements[--count];
   }
+  
+  void clear()
+  {
+    count = 0;
+  }
+  
+  bool is_full()
+  {
+    return count == N;
+  }
 };

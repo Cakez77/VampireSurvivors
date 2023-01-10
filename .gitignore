@@ -3,9 +3,9 @@
 *.pdb
 *.obj
 *.exe
-*.lib
 *.exp
 
 tkap_build.bat
 .vs
 game_load.dll
+game.lib
