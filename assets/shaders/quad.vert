@@ -57,32 +57,26 @@ void main()
   float top;
   float bottom;
 
-  float coordOffset = 0.6;
-  if(bool(t.renderOptions & RENDER_OPTION_FONT))
-  {
-    coordOffset = 0.5;
-  }
-  
-  // 0.6 because I HATE OPENGL IT'S SHIT!
+  // 0.6 because I HATE OPENGL IT'S SHIT! -> it's not needed, removed
   if(bool(t.renderOptions & RENDER_OPTION_FLIP_X))
   {
-    left = float(t.atlasOffset.x + t.spriteSize.x) - coordOffset;
-    right = float(t.atlasOffset.x) + coordOffset;
+    left = float(t.atlasOffset.x + t.spriteSize.x);
+    right = float(t.atlasOffset.x);
   }
   else
   {
-    left = float(t.atlasOffset.x) + coordOffset;
-    right = float(t.atlasOffset.x + t.spriteSize.x) - coordOffset;
+    left = float(t.atlasOffset.x);
+    right = float(t.atlasOffset.x + t.spriteSize.x);
   }
   if(bool(t.renderOptions & RENDER_OPTION_FLIP_Y))
   {
-    top = float(t.atlasOffset.y + t.spriteSize.y) - coordOffset;
-    bottom = float(t.atlasOffset.y) + coordOffset;
+    top = float(t.atlasOffset.y + t.spriteSize.y);
+    bottom = float(t.atlasOffset.y);
   }
   else
   {
-    top = float(t.atlasOffset.y) + coordOffset;
-    bottom = float(t.atlasOffset.y + t.spriteSize.y) - coordOffset;
+    top = float(t.atlasOffset.y);
+    bottom = float(t.atlasOffset.y + t.spriteSize.y);
   }
   vec2 textureCoords[6] = 
   {

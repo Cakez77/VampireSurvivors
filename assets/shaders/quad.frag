@@ -12,9 +12,11 @@ layout (binding = 1) uniform sampler2D fontAtlas;
 
 void main()
 {
-  ivec2 textureCoords = ivec2(round(textureCoordsIn));
+  // Don't round here - this was the actual problem
+  //ivec2 textureCoords = ivec2(round(textureCoordsIn));
   vec4 glyphColor = texelFetch(fontAtlas, ivec2(textureCoordsIn), 0);
-  vec4 textureColor = texelFetch(textureAtlas, textureCoords, 0);
+  // You already did not round the font texcoords funnily enough, which was correct
+  vec4 textureColor = texelFetch(textureAtlas, ivec2(textureCoordsIn), 0);
  
   if(bool(renderOptions & RENDER_OPTION_FONT))
   {
