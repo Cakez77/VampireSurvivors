@@ -22,6 +22,11 @@ void main()
 {
   Transform t = transforms[gl_InstanceID];
 
+  t.pos.x = float(int(t.pos.x));
+  t.pos.y = float(int(t.pos.y));
+  t.size.x = float(int(t.size.x));
+  t.size.y = float(int(t.size.y));
+
   // If not drawing top left, then we align to center
   if(!bool(t.renderOptions & RENDER_OPTION_TOP_LEFT))
   {

@@ -22,7 +22,9 @@ enum SpriteID
   SPRITE_PLAYER_BELMOT,
   SPRITE_PLAYER_GANDALF,
   SPRITE_EFFECT_WHIP,
-  SPRITE_CRYSTAL,
+  SPRITE_CRYSTAL_BLUE,
+  SPRITE_CRYSTAL_GREEN,
+  SPRITE_CRYSTAL_RED,
   SPRITE_EXP_BAR_LEFT,
   SPRITE_EXP_BAR_MIDDLE,
   SPRITE_EXP_BAR_RIGHT,
@@ -154,9 +156,27 @@ internal Sprite get_sprite(SpriteID spriteID)
       break;
     }
     
-    case SPRITE_CRYSTAL:
+    case SPRITE_CRYSTAL_BLUE:
     {
-      s.atlasOffset = {16, 0};
+      s.atlasOffset = {96, 128};
+      s.size = {16, 16};
+      s.subSize = {16, 16};
+      
+      break;
+    }
+    
+    case SPRITE_CRYSTAL_GREEN:
+    {
+      s.atlasOffset = {112, 128};
+      s.size = {16, 16};
+      s.subSize = {16, 16};
+      
+      break;
+    }
+    
+    case SPRITE_CRYSTAL_RED:
+    {
+      s.atlasOffset = {128, 128};
       s.size = {16, 16};
       s.subSize = {16, 16};
       

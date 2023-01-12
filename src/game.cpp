@@ -774,13 +774,13 @@ internal void update_level(float dt)
             
             p->pos += p->vel * dt * 100.0f;
           }
-          spriteID = SPRITE_CRYSTAL;
+          spriteID = SPRITE_CRYSTAL_BLUE;
           break;
         }
       }
       
       Sprite s = get_sprite(spriteID);
-      draw_sprite(spriteID, get_screen_pos(p->pos), vec_2(s.subSize) * 1.5f);
+      draw_sprite(spriteID, get_screen_pos(p->pos), vec_2(s.subSize) * 2.0f);
       
       if(point_in_circle(p->pos, playerPickupCollider))
       {
