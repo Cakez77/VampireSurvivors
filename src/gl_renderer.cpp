@@ -485,8 +485,11 @@ internal bool gl_init(void* window, RenderData* renderData)
       // set the texture wrapping/filtering options (on the currently bound texture object)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      // This setting only matters when using the GLSL texture() function
+      // When you use texelFetch() this setting has no effect, because texelFetch is designed for this purpose
+      // See: https://interactiveimmersive.io/blog/glsl/glsl-data-tricks/
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       
       // load and generate the texture
       int width = 0, height = 0;
@@ -496,8 +499,8 @@ internal bool gl_init(void* window, RenderData* renderData)
         glContext.textureAtlas01.lastEditTimestamp = get_last_edit_timestamp(TEXTURE_ATLAS_01);
         CAKEZ_ASSERT(glContext.textureAtlas01.lastEditTimestamp > 0,
                      "Failed getting edit Timestamp from TextureID: %d", TEXTURE_ATLAS_01);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glGenerateMipmap(GL_TEXTURE_2D);
+        // The atlas is sRGB exported
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
       }
       else
       {
@@ -516,6 +519,13 @@ internal bool gl_init(void* window, RenderData* renderData)
     }
   }
   
+  // sRGB output (even if input texture is non-sRGB -> don't rely on texture used)
+  // Your font is not using sRGB, for example (not that it matters there, because no actual color is sampled from it)
+  // But this could prevent some future bug when you start mixing different types of textures
+  // Of course, you still need to correctly set the image file source format when using glTexImage2D()
+  glEnable(GL_FRAMEBUFFER_SRGB);
+  glDisable(0x809D); // disable multisampling
+
   glContext.initialized = true;
   
   return true;
@@ -535,8 +545,8 @@ internal void hot_reload_textures()
       glContext.textureAtlas01.lastEditTimestamp = get_last_edit_timestamp(TEXTURE_ATLAS_01);
       CAKEZ_ASSERT(glContext.textureAtlas01.lastEditTimestamp > 0,
                    "Failed getting edit Timestamp from TextureID: %d", TEXTURE_ATLAS_01);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-      glGenerateMipmap(GL_TEXTURE_2D);
+      // The atlas is sRGB exported
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     }
     else
     {

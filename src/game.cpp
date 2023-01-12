@@ -780,7 +780,7 @@ internal void update_level(float dt)
       }
       
       Sprite s = get_sprite(spriteID);
-      draw_sprite(spriteID, get_screen_pos(p->pos), vec_2(s.subSize) * 2.0f);
+      draw_sprite(spriteID, get_screen_pos(p->pos), vec_2(s.subSize) * 2.0f); // pixel drawing with texelFetch can't use size * 1.5f here (if you want to support that, you need to switch to using texture() in shader instead)
       
       if(point_in_circle(p->pos, playerPickupCollider))
       {
