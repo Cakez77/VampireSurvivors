@@ -114,7 +114,9 @@ struct DamagingArea
 
 enum PickupType
 {
-  PICKUP_TYPE_EXP,
+  PICKUP_TYPE_EXP_BLUE,
+  PICKUP_TYPE_EXP_GREEN,
+  PICKUP_TYPE_EXP_RED,
   PICKUP_TYPE_BOX
 };
 
@@ -160,6 +162,9 @@ struct GameState
   float spawnsPerSecond;
   int spawnCounter;
   int spawnRateIdx;
+  
+  bool mergeBlueCrystals;
+  bool mergeGreenCrystals;
   
   Array<DamageNumber, MAX_DAMAGE_NUMBERS> damageNumbers;
   Array<Entity, MAX_ENEMIES> enemies;

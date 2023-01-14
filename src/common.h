@@ -61,7 +61,7 @@ struct Array
     return count++;
   }
   
-  void remove_and_swap(int idx)
+  void remove_idx_and_swap(int idx)
   {
     //CAKEZ_ASSERT(idx >= 0, "Idx negative!");
     //CAKEZ_ASSERT(idx < count, "Idx out of bounds!");

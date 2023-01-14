@@ -165,7 +165,7 @@ internal void inflict_damage(Entity* e, int dmg)
     // Drop EXP Gem
     {
       Pickup pickup = {};
-      pickup.type = PICKUP_TYPE_EXP;
+      pickup.type = PICKUP_TYPE_EXP_BLUE;
       pickup.pos = e->pos;
       gameState->pickups.add(pickup);
     }
@@ -674,7 +674,7 @@ internal void update_level(float dt)
       
       if(enemy->hp <= 0)
       {
-        gameState->enemies.remove_and_swap(enemyIdx--);
+        gameState->enemies.remove_idx_and_swap(enemyIdx--);
         continue;
       }
       
@@ -736,7 +736,7 @@ internal void update_level(float dt)
       
       if(dn->timer >= 0.5f)
       {
-        gameState->damageNumbers.remove_and_swap(damageNumberIdx--);
+        gameState->damageNumbers.remove_idx_and_swap(damageNumberIdx--);
         continue;
       }
     }
@@ -747,22 +747,82 @@ internal void update_level(float dt)
   {
     Circle playerPickupCollider = get_pickup_collider(gameState->player);
     Circle playerPickupTriggerCollider = get_pickup_trigger_collider(gameState->player);
+    
+    int blueCrystalCount = 0;
+    int greenCrystalCount = 0;
     for(int pickupIdx = 0; pickupIdx < gameState->pickups.count; pickupIdx++)
     {
       Pickup* p = &gameState->pickups[pickupIdx];
       
       SpriteID spriteID = SPRITE_WHITE;
-      
       switch(p->type)
       {
-        case PICKUP_TYPE_EXP:
+        case PICKUP_TYPE_EXP_BLUE:
+        case PICKUP_TYPE_EXP_GREEN:
+        case PICKUP_TYPE_EXP_RED:
         {
+          if(p->type == PICKUP_TYPE_EXP_BLUE && !p->triggered)
+          {
+            if(gameState->mergeBlueCrystals)
+            {
+              if(blueCrystalCount == CRYSTAL_MERGE_COUNT)
+              {
+                p->type = PICKUP_TYPE_EXP_GREEN;
+                gameState->mergeBlueCrystals = false;
+                blueCrystalCount = 0;
+              }
+              else
+              {
+                blueCrystalCount++;
+                gameState->pickups.remove_idx_and_swap(pickupIdx--);
+                continue;
+              }
+            }
+            else
+            {
+              blueCrystalCount++;
+              
+              if(!p->triggered &&
+                 blueCrystalCount > CRYSTAL_MERGE_COUNT + 10)
+              {
+                gameState->mergeBlueCrystals = true;
+              }
+            }
+          }
+          else if(p->type == PICKUP_TYPE_EXP_GREEN && !p->triggered)
+          {
+            if(gameState->mergeGreenCrystals)
+            {
+              if(greenCrystalCount == CRYSTAL_MERGE_COUNT)
+              {
+                p->type = PICKUP_TYPE_EXP_RED;
+                gameState->mergeGreenCrystals = false;
+                greenCrystalCount = 0;
+              }
+              else
+              {
+                greenCrystalCount++;
+                gameState->pickups.remove_idx_and_swap(pickupIdx--);
+                continue;
+              }
+            }
+            else
+            {
+              greenCrystalCount++;
+              
+              if(!p->triggered && greenCrystalCount > CRYSTAL_MERGE_COUNT + 10)
+              {
+                gameState->mergeGreenCrystals = true;
+              }
+            }
+          }
+          
           if(!p->triggered && point_in_circle(p->pos, playerPickupTriggerCollider))
           {
             p->triggered = true;
             
             // @Note(tkap, 29/11/2022): Start by going away from the player, same effect as VS
-            p->vel = normalize(p->pos - gameState->player.pos) * 70;
+            p->vel = normalize(p->pos - gameState->player.pos) * 60;
           }
           if(p->triggered)
           {
@@ -772,9 +832,12 @@ internal void update_level(float dt)
             // @Note(tkap, 29/11/2022): Capping the speed
             p->vel = p->vel * 0.9f;
             
-            p->pos += p->vel * dt * 100.0f;
+            p->pos += p->vel * dt * 50.0f;
           }
-          spriteID = SPRITE_CRYSTAL_BLUE;
+          
+          spriteID = p->type == 
+            PICKUP_TYPE_EXP_BLUE? SPRITE_CRYSTAL_BLUE: p->type == PICKUP_TYPE_EXP_GREEN? 
+            SPRITE_CRYSTAL_GREEN : SPRITE_CRYSTAL_RED;
           break;
         }
       }
@@ -784,18 +847,23 @@ internal void update_level(float dt)
       
       if(point_in_circle(p->pos, playerPickupCollider))
       {
-        gameState->pickups.remove_and_swap(pickupIdx--);
-        gameState->player.exp++;
+        
+        int expCount = p->type == PICKUP_TYPE_EXP_RED? 
+          2500 : p->type == PICKUP_TYPE_EXP_GREEN? 50 : 1;
+        
+        gameState->player.exp += expCount;
         
         int level = min(gameState->player.level, ArraySize(expTable) - 1);
         int expNeeded = expTable[level];
         
         if(gameState->player.exp >= expNeeded)
         {
-          gameState->player.exp = 0;
+          gameState->player.exp -= expNeeded;
           gameState->player.level++;
           gameState->state = GAME_STATE_LEVEL_UP;
         }
+        
+        gameState->pickups.remove_idx_and_swap(pickupIdx--);
         
         continue;
       }
@@ -887,7 +955,7 @@ internal void update_level(float dt)
       
       if(da->timePassed > da->duration)
       {
-        gameState->damagingAreas.remove_and_swap(daIdx--);
+        gameState->damagingAreas.remove_idx_and_swap(daIdx--);
         continue;
       }
     }
@@ -1289,7 +1357,7 @@ internal void update_level(float dt)
             add_damaging_area(WEAPON_MAGMA_RING, SPRITE_EFFECT_MAGMA_PUDDLE, aa->targetPos, 
                               vec_2(s.subSize) * UNIT_SCALE * aoeScale, damage, duration);
             
-            gameState->activeAttacks.remove_and_swap(aaIdx--);
+            gameState->activeAttacks.remove_idx_and_swap(aaIdx--);
           }
           else
           {
@@ -1309,7 +1377,7 @@ internal void update_level(float dt)
       // Active Attack ran out
       if(aa->timePassed >= skillDuration) 
       { 
-        gameState->activeAttacks.remove_and_swap(aaIdx--);
+        gameState->activeAttacks.remove_idx_and_swap(aaIdx--);
       }
     }
   }

@@ -244,7 +244,7 @@ int main()
   
   gl_init(window, renderData);
   // @Note(tkap, 21/11/2022): To not blow up my pc
-  renderer_set_vertical_sync(false);
+  renderer_set_vertical_sync(true);
   
   bool isGameInitialized = false;
   
