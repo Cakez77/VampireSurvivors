@@ -37,6 +37,9 @@ enum SpriteID
   SPRITE_ICON_MORNING_STAR,
   SPRITE_ICON_MAGMA_RING,
   SPRITE_SLICED_MENU_01,
+  SPRITE_SLICED_MENU_02,
+  SPRITE_SLICED_MENU_03,
+  SPRITE_MAIN_MENU_BACKGROUND,
   TILE_01,
   TILE_02,
   TILE_03,
@@ -287,6 +290,33 @@ internal Sprite get_sprite(SpriteID spriteID)
       s.atlasOffset = {0, 80};
       s.size = {16, 16};
       s.subSize = {16, 16};
+      
+      break;
+    }
+    
+    case SPRITE_SLICED_MENU_02:
+    {
+      s.atlasOffset = {80, 96};
+      s.size = {16, 16};
+      s.subSize = {16, 16};
+      
+      break;
+    }
+    
+    case SPRITE_SLICED_MENU_03:
+    {
+      s.atlasOffset = {80, 112};
+      s.size = {16, 16};
+      s.subSize = {16, 16};
+      
+      break;
+    }
+    
+    case SPRITE_MAIN_MENU_BACKGROUND:
+    {
+      s.atlasOffset = {640, 800};
+      s.size = {384, 224};
+      s.subSize = {384, 224};
       
       break;
     }

@@ -138,6 +138,7 @@ struct DamageNumber
 enum GameStateID
 {
   GAME_STATE_SELECT_HERO,
+  GAME_STATE_MAIN_MENU,
   GAME_STATE_LEVEL_UP,
   GAME_STATE_RUNNING_LEVEL,
   
@@ -153,6 +154,7 @@ struct GameState
 {
   GameStateID state;
   bool initialized = false;
+  bool quitApp = false;
   
   int entityIDCounter = 1;
   float totalTime;

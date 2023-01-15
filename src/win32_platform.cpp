@@ -253,6 +253,8 @@ int main()
   
   while(running)
   {
+    running = !gameState->quitApp;
+    
     // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		DLL STUFF START		vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv
     {
       long long DLLTimestamp = platform_last_edit_timestamp("game.dll");

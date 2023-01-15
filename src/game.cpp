@@ -216,7 +216,7 @@ __declspec(dllexport) void init_game(GameState* gameStateIn, Input* inputIn,
   input = inputIn;
   renderData = renderDataIn;
   
-  gameState->state = GAME_STATE_SELECT_HERO;
+  gameState->state = GAME_STATE_MAIN_MENU;
 }
 
 __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn, 
@@ -334,6 +334,54 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
   
   switch(gameState->state)
   {
+    case GAME_STATE_MAIN_MENU:
+    {
+      draw_sprite(SPRITE_MAIN_MENU_BACKGROUND, vec_2(input->screenSize) / 2.0f, vec_2(WORLD_SIZE));
+      
+      Vec2 buttonsPos = {input->screenSize.x / 2.0f, 400.0f};
+      Vec2 buttonsSize = {200.0f, 70.0f};
+      
+      // Play Button
+      {
+        SpriteID buttonSprite = SPRITE_SLICED_MENU_02;
+        
+        if(point_in_rect(input->mousePosScreen ,{buttonsPos - buttonsSize / 2.0f, buttonsSize}))
+        {
+          buttonSprite = SPRITE_SLICED_MENU_03;
+          
+          if(is_key_pressed(KEY_LEFT_MOUSE))
+          {
+            gameState->state = GAME_STATE_SELECT_HERO;
+          }
+        }
+        
+        draw_sliced_sprite(buttonSprite, buttonsPos, buttonsSize);
+        draw_text("Start", buttonsPos + Vec2{-50.0f});
+        buttonsPos.y += 100.0f;
+      }
+      
+      // Quit Button
+      {
+        SpriteID buttonSprite = SPRITE_SLICED_MENU_02;
+        
+        if(point_in_rect(input->mousePosScreen ,{buttonsPos - buttonsSize / 2.0f, buttonsSize}))
+        {
+          buttonSprite = SPRITE_SLICED_MENU_03;
+          
+          if(is_key_pressed(KEY_LEFT_MOUSE))
+          {
+            gameState->quitApp = true;
+          }
+        }
+        
+        draw_sliced_sprite(buttonSprite, buttonsPos, buttonsSize);
+        draw_text("Quit", buttonsPos + Vec2{-40.0f});
+        buttonsPos.y += 100.0f;
+      }
+      
+      break;
+    }
+    
     case GAME_STATE_SELECT_HERO:
     {
       //TODO Inefficient, find a better way
@@ -459,8 +507,6 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     
     case GAME_STATE_LEVEL_UP:
     {
-      draw_exp_bar();
-      
       // Draw Enemies
       {
         for(int enemyIdx = 0; enemyIdx < gameState->enemies.count; enemyIdx++)
@@ -474,6 +520,8 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
                         .renderOptions = enemy.desiredDirection.x > 0.0f? RENDER_OPTION_FLIP_X: 0});
         }
       }
+      
+      draw_exp_bar();
       
       Vec4 boxColor = COLOR_WHITE;
       Vec2 levelUpMenuSize = {800.0f, 600.0f};

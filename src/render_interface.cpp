@@ -81,6 +81,7 @@ void draw_sliced_sprite(SpriteID spriteID, Vec2 middle, Vec2 size, DrawData draw
   
   // Draw Top Left 5x5
   Vec2 topLeft = middle - size / 2.0f;
+  
   t.pos = topLeft;
   t.size = vec_2(5.0f * scale);
   t.atlasOffset = s.atlasOffset;
@@ -97,7 +98,7 @@ void draw_sliced_sprite(SpriteID spriteID, Vec2 middle, Vec2 size, DrawData draw
   // Draw Top Right  5x5
   t.pos = topLeft + Vec2{edgeSize + sizeX};
   t.size = vec_2(edgeSize);
-  t.atlasOffset = s.atlasOffset + IVec2{10};
+  t.atlasOffset = s.atlasOffset + IVec2{11};
   t.spriteSize = ivec_2(5);
   add_transform(t);
   
@@ -118,28 +119,28 @@ void draw_sliced_sprite(SpriteID spriteID, Vec2 middle, Vec2 size, DrawData draw
   // Draw Middle Right
   t.pos = topLeft + Vec2{edgeSize + sizeX, edgeSize};
   t.size = {edgeSize, sizeY};
-  t.atlasOffset = s.atlasOffset + IVec2{10, 5};
+  t.atlasOffset = s.atlasOffset + IVec2{11, 5};
   t.spriteSize = {5, 5};
   add_transform(t);
   
   // Draw Bottom Left
   t.pos = topLeft + Vec2{0.0f, edgeSize + sizeY};
   t.size = vec_2(edgeSize);
-  t.atlasOffset = s.atlasOffset + IVec2{0, 10};
+  t.atlasOffset = s.atlasOffset + IVec2{0, 11};
   t.spriteSize = ivec_2(5);
   add_transform(t);
   
   // Draw Bottom Middle
   t.pos = topLeft + Vec2{edgeSize, edgeSize + sizeY};
   t.size = Vec2{sizeX, edgeSize};
-  t.atlasOffset = s.atlasOffset + IVec2{5, 10};
+  t.atlasOffset = s.atlasOffset + IVec2{5, 11};
   t.spriteSize = {5, 5};
   add_transform(t);
   
   // Draw Bottom Right
   t.pos = topLeft + Vec2{edgeSize + sizeX, edgeSize + sizeY};
   t.size = vec_2(edgeSize);
-  t.atlasOffset = s.atlasOffset + IVec2{10, 10};
+  t.atlasOffset = s.atlasOffset + IVec2{11, 11};
   t.spriteSize = {5, 5};
   add_transform(t);
 }
