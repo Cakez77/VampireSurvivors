@@ -43,6 +43,9 @@ enum SpriteID
   TILE_01,
   TILE_02,
   TILE_03,
+  SPRITE_OBSTACLE_LOG_32,
+  SPRITE_OBSTACLE_TREE_STUMP_48_32,
+  SPRITE_OBSTACLE_PILLAR_BOTTOM_32,
   
   SPRITE_COUNT,
 };
@@ -344,6 +347,33 @@ internal Sprite get_sprite(SpriteID spriteID)
       s.atlasOffset = {128, 400};
       s.size = {64, 64};
       s.subSize = {64, 64};
+      
+      break;
+    }
+    
+    case SPRITE_OBSTACLE_LOG_32:
+    {
+      s.atlasOffset = {80, 144};
+      s.size = {32, 32};
+      s.subSize = {32, 32};
+      
+      break;
+    }
+    
+    case SPRITE_OBSTACLE_TREE_STUMP_48_32:
+    {
+      s.atlasOffset = {112, 144};
+      s.size = {48, 32};
+      s.subSize = {48, 32};
+      
+      break;
+    }
+    
+    case SPRITE_OBSTACLE_PILLAR_BOTTOM_32:
+    {
+      s.atlasOffset = {160, 144};
+      s.size = {32, 32};
+      s.subSize = {32, 32};
       
       break;
     }

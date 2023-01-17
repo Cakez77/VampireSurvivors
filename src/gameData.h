@@ -150,6 +150,12 @@ struct WorldChunk
   Array<int, MAX_ENEMIES_CHUNK> enemyIndices;
 };
 
+struct Obstacle
+{
+  SpriteID spriteID;
+  Rect collider;
+};
+
 struct GameState
 {
   GameStateID state;
@@ -173,6 +179,7 @@ struct GameState
   Array<ActiveAttack, MAX_ACTIVE_ATTACKS> activeAttacks;
   Array<DamagingArea, MAX_DAMAGING_AREAS> damagingAreas;
   Array<Pickup, MAX_PICKUPS> pickups;
+  Array<Obstacle, MAX_OBSTACLES> obstacles;
   
   // One Chunk is 300x300, WORLD_SIZE is 1600x900
   WorldChunk worldGrid [WORLD_GRID_SIZE.x][WORLD_GRID_SIZE.y];

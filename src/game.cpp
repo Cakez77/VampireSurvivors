@@ -21,7 +21,7 @@ global_variable RenderData* renderData = 0;
 
 internal Vec2 get_screen_pos(Vec2 pos)
 {
-  Vec2 screenMiddle = vec_2(WORLD_SIZE) / 2.0f;
+  Vec2 screenMiddle = vec_2(SCREEN_SIZE) / 2.0f;
   Vec2 screenPos = screenMiddle + pos - gameState->player.pos;
   
   return screenPos;
@@ -116,6 +116,29 @@ internal Circle get_collider(Player p)
 internal Circle get_collider(Entity e)
 {
   return {e.pos + e.collider.pos, e.collider.radius};
+}
+
+internal Vec2 get_chunk_offset(Vec2 pos)
+{
+  Vec2 tileSize = Vec2{64.0f, 64.0f} * UNIT_SCALE;
+  float chunkWidth = (float)MAP_CHUNK_TILE_COUNT * tileSize.x;
+  float chunkOffsetX = fmodf(pos.x, chunkWidth);
+  float chunkOffsetY = fmodf(pos.y, chunkWidth);
+  
+  // Loop inside the Chunk
+  {
+    if(chunkOffsetX < 0.0f)
+    {
+      chunkOffsetX += chunkWidth;
+    }
+    
+    if(chunkOffsetY < 0.0f)
+    {
+      chunkOffsetY += chunkWidth;
+    }
+  }
+  
+  return {chunkOffsetX, chunkOffsetY};
 }
 
 internal Weapon* get_weapon(WeaponID weaponID)
@@ -271,7 +294,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       chunkCol = -chunkCol;
     }
     
-    Vec2 screenMiddle = vec_2(WORLD_SIZE) / 2.0f;
+    Vec2 screenMiddle = vec_2(SCREEN_SIZE) / 2.0f;
     
     // Tile Offset Player
     float playerTileOffsetX = fmodf(playerPos.x, tileSize.x);
@@ -330,13 +353,95 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
                     {.renderOptions = RENDER_OPTION_TOP_LEFT});
       }
     }
+    
+    // Obstacles inside the Cunk
+    {
+      gameState->obstacles.count = 0;
+      gameState->obstacles.add({SPRITE_OBSTACLE_LOG_32, {100.0f, 100.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_LOG_32, {100.0f, 164.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_LOG_32, {100.0f, 228.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_LOG_32, {100.0f, 228.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_TREE_STUMP_48_32, {600.0f, 200.0f, 48.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_TREE_STUMP_48_32, {840.0f, 600.0f, 48.0f, 32.0f}});
+      
+      // Top
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {800.0f,  700.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {864.0f,  700.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {928.0f,  700.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {992.0f,  700.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {1056.0f, 700.0f, 32.0f, 32.0f}});
+      
+      // Left
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {800.0f, 764.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {800.0f, 828.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {800.0f, 892.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {800.0f, 956.0f, 32.0f, 32.0f}});
+      
+      // Right
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {1056.0f, 764.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {1056.0f, 828.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {1056.0f, 892.0f, 32.0f, 32.0f}});
+      gameState->obstacles.add({SPRITE_OBSTACLE_PILLAR_BOTTOM_32, {1056.0f, 956.0f, 32.0f, 32.0f}});
+      
+      for(int obstacleIdx = 0; obstacleIdx < gameState->obstacles.count; obstacleIdx++)
+      {
+        Obstacle obstacle = gameState->obstacles[obstacleIdx];
+        
+        Vec2 obstaclePos = {};
+        obstaclePos.x = obstacle.collider.pos.x - playerChunkOffsetX + screenMiddle.x;
+        obstaclePos.y = obstacle.collider.pos.y - playerChunkOffsetY + screenMiddle.y;
+        
+        // Draw in current chunk
+        draw_sprite(obstacle.spriteID, obstaclePos, obstacle.collider.size * 2.0f,
+                    {.renderOptions = RENDER_OPTION_TOP_LEFT});
+        
+        // Draw in left chunk
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{-chunkWidth}, obstacle.collider.size * 2.0f,
+                    {.renderOptions = RENDER_OPTION_TOP_LEFT});
+        
+        // Draw in right chunk
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{chunkWidth}, obstacle.collider.size * 2.0f,
+                    {.renderOptions = RENDER_OPTION_TOP_LEFT});
+        
+        // Draw in top chunk
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{0.0f, -chunkWidth}, 
+                    obstacle.collider.size * 2.0f,
+                    {.renderOptions = RENDER_OPTION_TOP_LEFT});
+        
+        // Draw in bottom chunk
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{0.0f, chunkWidth}, 
+                    obstacle.collider.size * 2.0f,
+                    {.renderOptions = RENDER_OPTION_TOP_LEFT});
+        
+        // Draw in top left chunk
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{-chunkWidth, -chunkWidth}, 
+                    obstacle.collider.size * 2.0f,
+                    {.renderOptions = RENDER_OPTION_TOP_LEFT});
+        
+        // Draw in top right chunk
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{chunkWidth, -chunkWidth}, 
+                    obstacle.collider.size * 2.0f,
+                    {.renderOptions = RENDER_OPTION_TOP_LEFT});
+        
+        // Draw in bottom left chunk
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{-chunkWidth, chunkWidth}, 
+                    obstacle.collider.size * 2.0f,
+                    {.renderOptions = RENDER_OPTION_TOP_LEFT});
+        
+        // Draw in bottom right chunk
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{chunkWidth, chunkWidth}, 
+                    obstacle.collider.size * 2.0f,
+                    {.renderOptions = RENDER_OPTION_TOP_LEFT});
+        
+      }
+    }
   }
   
   switch(gameState->state)
   {
     case GAME_STATE_MAIN_MENU:
     {
-      draw_sprite(SPRITE_MAIN_MENU_BACKGROUND, vec_2(input->screenSize) / 2.0f, vec_2(WORLD_SIZE));
+      draw_sprite(SPRITE_MAIN_MENU_BACKGROUND, vec_2(input->screenSize) / 2.0f, vec_2(SCREEN_SIZE));
       
       Vec2 buttonsPos = {input->screenSize.x / 2.0f, 400.0f};
       Vec2 buttonsSize = {200.0f, 70.0f};
@@ -387,6 +492,8 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       //TODO Inefficient, find a better way
       *gameState = {};
       bool madeChoice = false;
+      
+      // Add Obsacles
       
       Vec4 boxColor = COLOR_WHITE;
       Vec2 levelUpMenuSize = {1200.0f, 600.0f};
@@ -497,7 +604,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
         // Place the Player in the middle of the Map, meaning
         // in the middle of a 15x15 chunk Grid, 
         gameState->player.pos = vec_2(mapWidth / 2);
-        gameState->playerScreenEdgeDist = length(vec_2(WORLD_SIZE - WORLD_SIZE / 2)) + 50.0f;
+        gameState->playerScreenEdgeDist = length(vec_2(SCREEN_SIZE - SCREEN_SIZE / 2)) + 50.0f;
         
         
         gameState->state = GAME_STATE_RUNNING_LEVEL;
@@ -733,22 +840,22 @@ internal void update_level(float dt)
       
       if(relativePos.x < 0.0f) // We are too far to the left side of the player
       {
-        enemy->pos.x = gameState->player.pos.x + WORLD_SIZE.x / 2.0f;
+        enemy->pos.x = gameState->player.pos.x + SCREEN_SIZE.x / 2.0f;
       }
       
       if(relativePos.x >= 2000.0f) // We are too far to the right side of the player
       {
-        enemy->pos.x = gameState->player.pos.x - WORLD_SIZE.x / 2.0f;
+        enemy->pos.x = gameState->player.pos.x - SCREEN_SIZE.x / 2.0f;
       }
       
       if(relativePos.y < 0.0f) // We are too far to the left side of the player
       {
-        enemy->pos.y = gameState->player.pos.y + WORLD_SIZE.y / 2.0f;
+        enemy->pos.y = gameState->player.pos.y + SCREEN_SIZE.y / 2.0f;
       }
       
       if(relativePos.y >= 1300.0f) // We are too far to the right side of the player
       {
-        enemy->pos.y = gameState->player.pos.y - WORLD_SIZE.y / 2.0f;
+        enemy->pos.y = gameState->player.pos.y - SCREEN_SIZE.y / 2.0f;
       }
       
       relativePos = enemy->pos - gameState->player.pos + Vec2{1000.0f, 650.0f};
@@ -951,7 +1058,7 @@ internal void update_level(float dt)
               continue;
             }
             
-            if(rect_circle_collision(daCollider, enemyCollider))
+            if(rect_circle_collision(daCollider, enemyCollider, 0))
             {
               // Damage 
               inflict_damage(enemy, da->damage);
@@ -1202,7 +1309,36 @@ internal void update_level(float dt)
       if(dirLength > 0.0f)
       {
         dir = dir / dirLength;
-        p->pos += dir * dt * p->speed;
+        Vec2 heading = p->pos + dir * dt * p->speed;
+        for(int obstacleIdx = 0; obstacleIdx < gameState->obstacles.count; obstacleIdx++)
+        {
+          Obstacle obstacle = gameState->obstacles[obstacleIdx];
+          obstacle.collider.size.x *= UNIT_SCALE;
+          obstacle.collider.size.y *= UNIT_SCALE;
+          
+          Circle playerCollider = get_collider(*p);
+          
+          // Make the Collider bigger against Obstacles
+          playerCollider.radius += 6.0f;
+          
+          // Get Chunk Offset
+          {
+            float chunkWidth = (float)MAP_CHUNK_TILE_COUNT * 64.0f * UNIT_SCALE;
+            
+            // Which Tile to use
+            playerCollider.pos.x = fmodf(p->pos.x, chunkWidth);
+            playerCollider.pos.y = fmodf(p->pos.y, chunkWidth);
+          }
+          
+          Vec2 pushoutDir = {};
+          if(rect_circle_collision(obstacle.collider, playerCollider, &pushoutDir))
+          {
+            heading += pushoutDir;
+          }
+          
+          p->pos = heading;
+        }
+        
       }
     }
     // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		PLAYER MOVEMENT END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

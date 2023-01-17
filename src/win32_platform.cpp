@@ -240,7 +240,7 @@ int main()
   QueryPerformanceCounter(&lastTickCount);
   float dt = 0.0f;
   
-  platform_create_window(WORLD_SIZE.x, WORLD_SIZE.y, "VSClone");
+  platform_create_window(SCREEN_SIZE.x, SCREEN_SIZE.y, "VSClone");
   
   gl_init(window, renderData);
   // @Note(tkap, 21/11/2022): To not blow up my pc

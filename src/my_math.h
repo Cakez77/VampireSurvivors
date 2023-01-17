@@ -278,7 +278,7 @@ internal bool circle_collision(Circle a, Circle b, float* pushout = 0)
   return result;
 }
 
-internal bool rect_circle_collision(Rect rect, Circle c)
+internal bool rect_circle_collision(Rect rect, Circle c, Vec2* pushout)
 {
   Vec2 topLeft = rect.pos;
   Vec2 topRight = rect.pos + Vec2{rect.size.x};
@@ -291,6 +291,16 @@ internal bool rect_circle_collision(Rect rect, Circle c)
   
   if(point_in_circle(projectedPos, c))
   {
+    if(pushout)
+    {
+      Vec2 pointDir = c.pos - projectedPos;
+      float lengthToPoint = length(pointDir);
+      float penetrationLength = c.radius - lengthToPoint;
+      
+      Vec2 pushoutDir = normalize(pointDir);
+      
+      *pushout = pushoutDir * penetrationLength;
+    }
     return true;
   }
   

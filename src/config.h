@@ -19,7 +19,7 @@ constexpr Vec2 ORIGIN_CENTER = {0.0f, 0.0f};
 //#############################################################
 //                  Game
 //#############################################################
-constexpr IVec2 WORLD_SIZE = {1600, 900};
+constexpr IVec2 SCREEN_SIZE = {1600, 900};
 constexpr IVec2 WORLD_GRID_SIZE = {20, 13};
 constexpr int MAP_CHUNK_COUNT = 15;
 constexpr int MAP_CHUNK_TILE_COUNT = 15;
@@ -31,6 +31,7 @@ constexpr int MAX_DAMAGING_AREAS = 128;
 constexpr int MAX_PICKUPS = 1000;
 constexpr int MAX_DAMAGE_NUMBERS = 200;
 constexpr int CRYSTAL_MERGE_COUNT = 50;
+constexpr int MAX_OBSTACLES = 50;
 
 internal SpriteID ChunkTiles [MAP_CHUNK_TILE_COUNT][MAP_CHUNK_TILE_COUNT] = 
 {
@@ -50,6 +51,7 @@ internal SpriteID ChunkTiles [MAP_CHUNK_TILE_COUNT][MAP_CHUNK_TILE_COUNT] =
   {TILE_02, TILE_01, TILE_01, TILE_01, TILE_01, TILE_01, TILE_01, TILE_01, TILE_01, TILE_01, TILE_01, TILE_01, TILE_03, TILE_01, TILE_02},
   {TILE_02, TILE_02, TILE_02, TILE_02, TILE_02, TILE_02, TILE_02, TILE_02, TILE_02, TILE_02, TILE_02, TILE_02, TILE_02, TILE_02, TILE_02},
 };
+
 
 // EXP Table, needed by Pickups and EXP Bar
 internal int expTable [] = 
