@@ -486,7 +486,8 @@ internal bool gl_init(void* window, RenderData* renderData)
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
       // This setting only matters when using the GLSL texture() function
-      // When you use texelFetch() this setting has no effect, because texelFetch is designed for this purpose
+      // When you use texelFetch() this setting has no effect, 
+      // because texelFetch is designed for this purpose
       // See: https://interactiveimmersive.io/blog/glsl/glsl-data-tricks/
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
@@ -525,7 +526,7 @@ internal bool gl_init(void* window, RenderData* renderData)
   // Of course, you still need to correctly set the image file source format when using glTexImage2D()
   glEnable(GL_FRAMEBUFFER_SRGB);
   glDisable(0x809D); // disable multisampling
-
+  
   glContext.initialized = true;
   
   return true;

@@ -92,5 +92,6 @@ void main()
     vec2(left, bottom),
     vec2(right, bottom)
   };
+
   textureCoordsOut = vec2(textureCoords[gl_VertexID]);
 }

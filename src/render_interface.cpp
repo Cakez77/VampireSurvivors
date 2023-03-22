@@ -50,6 +50,19 @@ void draw_transform(DrawData drawData)
   add_transform(t);
 }
 
+void draw_transparent_transform(DrawData drawData)
+{
+  Sprite s = get_sprite(drawData.spriteID);
+  Transform t = {};
+  t.pos = drawData.pos;
+  t.size = drawData.size;
+  t.atlasOffset = s.atlasOffset;
+  t.spriteSize = s.subSize;
+  t.renderOptions = drawData.renderOptions;
+  t.materialIdx = get_material_idx(drawData.color);
+  add_transparent_transform(t);
+}
+
 void draw_quad(Vec2 pos, Vec2 size, DrawData drawData)
 {
   drawData.pos = pos;
@@ -65,6 +78,15 @@ void draw_sprite(SpriteID spriteID, Vec2 pos, Vec2 size, DrawData drawData)
   drawData.size = size;
   
   draw_transform(drawData);
+}
+
+void draw_transparent_sprite(SpriteID spriteID, Vec2 pos, Vec2 size, DrawData drawData)
+{
+  drawData.spriteID = spriteID;
+  drawData.pos = pos;
+  drawData.size = size;
+  
+  draw_transparent_transform(drawData);
 }
 
 void draw_sliced_sprite(SpriteID spriteID, Vec2 middle, Vec2 size, DrawData drawData)

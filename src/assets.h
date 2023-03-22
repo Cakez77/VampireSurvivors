@@ -31,6 +31,7 @@ enum SpriteID
   SPRITE_EFFECT_GARLIC,
   SPRITE_EFFECT_MAGMA_BALL,
   SPRITE_EFFECT_MAGMA_PUDDLE,
+  SPRITE_EFFECT_HEALING_CIRCLE,
   SPRITE_ICON_WHIP,
   SPRITE_ICON_CIRCLE,
   SPRITE_ICON_AXE,
@@ -239,6 +240,15 @@ internal Sprite get_sprite(SpriteID spriteID)
       s.atlasOffset = {0, 176};
       s.size = {48, 48};
       s.subSize = {48, 48};
+      
+      break; 
+    }
+    
+    case SPRITE_EFFECT_HEALING_CIRCLE:
+    {
+      s.atlasOffset = {48, 176};
+      s.size = {64, 80};
+      s.subSize = {64, 80};
       
       break; 
     }
