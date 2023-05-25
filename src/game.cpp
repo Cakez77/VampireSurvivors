@@ -629,12 +629,6 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       }
       
       draw_exp_bar();
-      draw_transparent_sprite(SPRITE_EFFECT_HEALING_CIRCLE, {200.0f, 300.0f}, {256.0f, 256.0f},
-                              { .color = COLOR_WHITE,
-                                .renderOptions = RENDER_OPTION_GRAYSCALE_STUFF_DUNNO});
-      draw_transparent_sprite(SPRITE_EFFECT_HEALING_CIRCLE, {200.0f, 300.0f}, {256.0f, 256.0f},
-                              { .color = COLOR_WHITE,
-                                .renderOptions = RENDER_OPTION_GRAYSCALE_STUFF_DUNNO});
       
       Vec4 boxColor = COLOR_WHITE;
       Vec2 levelUpMenuSize = {800.0f, 600.0f};

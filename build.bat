@@ -10,7 +10,7 @@
 SET warnings=/W4 /wd4505 /wd4100
 SET includesCL=/Ithird_party /Ithird_party/Include
 SET definesCL=/D DEBUG /D GAME /D _CRT_SECURE_NO_WARNINGS
-SET linksCL=/link /LIBPATH:third_party/Lib user32.lib Shell32.lib opengl32.lib gdi32.lib freetype.lib
+SET linksCL=/link /LIBPATH:third_party/Lib user32.lib Shell32.lib opengl32.lib gdi32.lib freetype.lib ole32.lib
 
 set crazy_date_thing=%date:~-4,4%%date:~-10,2%%date:~-7,2%_%time:~0,2%%time:~3,2%%time:~6,2%
 del *.pdb > NUL 2> NUL

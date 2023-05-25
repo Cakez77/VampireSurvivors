@@ -27,7 +27,6 @@ struct GLContext
   RenderData* renderData;
 };
 
-
 //#############################################################
 //                  Global Variables
 //#############################################################
@@ -102,7 +101,6 @@ internal void init_open_gl_functions()
   init_gl_func(glGenerateMipmap);
   init_gl_func(glGetProgramInfoLog);
 }
-
 
 // Freetype uses internal
 #undef internal

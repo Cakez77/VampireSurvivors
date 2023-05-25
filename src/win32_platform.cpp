@@ -6,6 +6,7 @@
 #include "common.h"
 #include "config.h"
 #include "shared.h"
+#include "sound.h"
 
 // Asset Layer
 #include "assets.cpp"
@@ -15,11 +16,45 @@
 #include <windowsx.h>
 #include "gl_renderer.cpp"
 
+// Audio
+#include <xaudio2.h>
+#include <tlhelp32.h>
+
+struct XAudioVoice : IXAudio2VoiceCallback
+{
+  bool playing;
+  IXAudio2SourceVoice* voice;
+  
+  // Unused methods are stubs
+  void OnStreamEnd() {playing = false;}
+#pragma warning(disable : 4100)
+  void OnBufferStart(void* pBufferContext) {playing = true;}
+  
+  // Unused methods are stubs
+  void OnVoiceProcessingPassEnd() {}
+  void OnVoiceProcessingPassStart(UINT32 SamplesRequired) {}
+  void OnBufferEnd(void* pBufferContext) {}
+  void OnLoopEnd(void* pBufferContext) {}
+  void OnVoiceError(void* pBufferContext, HRESULT Error) {}
+#pragma warning(default : 4100)
+};
+
+struct XAudioState
+{
+  IXAudio2* device;
+  IXAudio2MasteringVoice* masteringVoice;
+  
+  XAudioVoice voices[MAX_PLAYING_SOUNDS];
+};
+
+global_variable XAudioState xAudioState;
+
 // Memory
 global_variable int persistentBytesUsed = 0;
 global_variable int transientBytesUsed = 0;
 global_variable char* persistentBuffer = 0;
 global_variable char* transientBuffer = 0;
+
 
 global_variable bool running = true;
 global_variable HWND window;
@@ -113,7 +148,7 @@ LRESULT CALLBACK window_callback(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
   return result;
 }
 
-internal bool platform_create_window(int width, int height, const char *title)
+internal bool platform_create_window(int width, int height, char* title)
 {
   HINSTANCE instance = GetModuleHandleA(0);
   
@@ -169,7 +204,8 @@ internal bool platform_create_window(int width, int height, const char *title)
   window_width += border_rect.right - border_rect.left;
   window_height += border_rect.bottom - border_rect.top;
   
-  window = CreateWindowExA((DWORD)window_ex_style, "cakez_window_class", title,
+  window = CreateWindowExA((DWORD)window_ex_style, 
+                           "cakez_window_class", title,
                            (DWORD)window_style, window_x, window_y, window_width, window_height,
                            0, 0, instance, 0);
   
@@ -196,6 +232,79 @@ internal void platform_update_window()
   }
 }
 
+//#############################################################
+//                  XAudio 2
+//#############################################################
+internal bool init_audio()
+{
+  // Allocate Memory
+  soundState.buffer = platform_allocate_persistent(MAX_BYTES_SOUND_BUFFER);
+  if(!soundState.buffer)
+  {
+    CAKEZ_ASSERT(0, "Failed to allocate Sound Buffer");
+    return false;
+  }
+  
+  
+  // See: https://learn.microsoft.com/en-us/windows/win32/xaudio2/how-to--initialize-xaudio2
+  if (CoInitializeEx(0, COINIT_MULTITHREADED) != 0)
+  {
+    CAKEZ_ASSERT(0, "Failed to initialize xAudio2");
+    return false;
+  }
+  
+  if (XAudio2Create(&xAudioState.device, 0, XAUDIO2_USE_DEFAULT_PROCESSOR) != 0)
+  {
+    CAKEZ_ASSERT(0, "Failed to Create xAudio2 Device");
+    return false;
+  }
+  
+  // This is like the primary buffer in DirectSound
+  if (xAudioState.device->CreateMasteringVoice(&xAudioState.masteringVoice) != 0)
+  {
+    CAKEZ_ASSERT(0, "Failed to Create xAudio2 Mastering Voice");
+    return false;
+  }
+  
+  // Adjust these to your specific WAV format used in your game
+  // You can refactor this to be a different format or auto-detect it if you want to support
+  // different exported formats. But I usually stick to just one format for my games.
+  WAVEFORMATEX waveFormat = {0};
+  waveFormat.wFormatTag = WAVE_FORMAT_PCM;
+  waveFormat.nChannels = 2; // Stereo
+  waveFormat.wBitsPerSample = 16; // 16 bits
+  waveFormat.nSamplesPerSec = 48000; // 48 Khz
+  waveFormat.nBlockAlign = (waveFormat.nChannels * waveFormat.wBitsPerSample) / 8;
+  waveFormat.nAvgBytesPerSec = waveFormat.nSamplesPerSec * waveFormat.nBlockAlign;
+  waveFormat.cbSize = 0;
+  
+  // TODO: Submixes can be used to act as "Sound Groups" allowing us to control Volume 
+  // only for a certain Type of Sound, skipped here because it's easier without
+  
+  for(int voiceIdx = 0; voiceIdx < MAX_PLAYING_SOUNDS; voiceIdx++)
+  {
+    XAudioVoice* xAudioVoice = &xAudioState.voices[voiceIdx];
+    
+    // These are like the secondary buffers in DirectSound, 
+    int result = xAudioState.device->
+      CreateSourceVoice(&xAudioVoice->voice, 
+                        &waveFormat, XAUDIO2_VOICE_NOPITCH, 
+                        XAUDIO2_DEFAULT_FREQ_RATIO, 
+                        (IXAudio2VoiceCallback*)xAudioVoice,
+                        0 /* Send audio to submix here, 0 = mastering voice */);
+    
+    // Reduce the Volume by 95%?????
+    xAudioVoice->voice->SetVolume(0.05f);
+    
+    if (result)
+    {
+      CAKEZ_ASSERT(0, "Failed to Create xAudio2 Voice");
+      return false;
+    }
+  }
+  
+  return true;
+}
 
 typedef void(init_game_type)(GameState*, Input*, RenderData*);
 typedef void(update_game_type)(GameState*, Input*, RenderData*, float);
@@ -245,6 +354,10 @@ int main()
   gl_init(window, renderData);
   // @Note(tkap, 21/11/2022): To not blow up my pc
   renderer_set_vertical_sync(true);
+  
+  // Audio
+  init_audio();
+  platform_play_sound(SOUND_BACKGROUND);
   
   bool isGameInitialized = false;
   
@@ -574,6 +687,88 @@ long long platform_last_edit_timestamp(char* path)
   return time;
 }
 
+void platform_play_sound(SoundID soundID, bool loop)
+{
+  Sound* sound = 0;
+  for(int soundIdx = 0; soundIdx < soundState.allocatedSoundsCount; soundIdx++)
+  {
+    Sound* s = &soundState.allocatedSounds[soundIdx];
+    
+    if(s->ID == soundID)
+    {
+      sound = s;
+      break;
+    }
+  }
+  
+  if(!sound)
+  {
+    if(soundState.allocatedSoundsCount < MAX_ALLOCATED_SOUNDS)
+    {
+      sound = &soundState.allocatedSounds[soundState.allocatedSoundsCount++];
+    }
+    
+    // Load a new file from disk and copy that into the sound state
+    uint32_t fileSize = 0;
+    char* soundFile = platform_read_file(SoundFiles[soundID], &fileSize);
+    
+    if(soundFile)
+    {
+      // Find the Data of the WAV file
+      WaveDataChunk *dataChunk = (WaveDataChunk*)(soundFile + sizeof(WaveFileHeader));
+      while(*(uint32_t*)&dataChunk->dataChunkId != FOURCC("data"))
+      {
+        dataChunk = (WaveDataChunk*)((char*)(dataChunk) + sizeof(WaveDataChunk) + dataChunk->dataSize);
+      }
+      
+      if((int)dataChunk->dataSize < MAX_BYTES_SOUND_BUFFER - soundState.bytesUsed)
+      {
+        sound->ID = soundID;
+        sound->data = &soundState.buffer[soundState.bytesUsed];
+        sound->sizeInBytes = dataChunk->dataSize;
+        
+        char* soundData = (char*)dataChunk + sizeof(WaveDataChunk);
+        
+        memcpy(sound->data, soundData, dataChunk->dataSize);
+        soundState.bytesUsed += dataChunk->dataSize;
+      }
+      else
+      {
+        CAKEZ_ASSERT(0, "Exausted Sound Buffer");
+      }
+    }
+    else
+    {
+      CAKEZ_ASSERT(0, "Failed Loading Sound");
+    }
+  }
+  
+  // Load the sound into xaudio
+  {
+    for(int voiceIdx = 0; voiceIdx < MAX_PLAYING_SOUNDS; voiceIdx++)
+    {
+      XAudioVoice xAudioVoice = xAudioState.voices[voiceIdx];
+      
+      if(xAudioVoice.playing)
+      {
+        continue;
+      }
+      
+      XAUDIO2_BUFFER stupidBuffer = {0};
+      stupidBuffer.AudioBytes = sound->sizeInBytes;
+      stupidBuffer.pAudioData = (BYTE *)sound->data;
+      stupidBuffer.Flags = XAUDIO2_END_OF_STREAM;
+      stupidBuffer.LoopCount = loop? XAUDIO2_MAX_LOOP_COUNT: 0;
+      
+      if (int result = xAudioVoice.voice->SubmitSourceBuffer(&stupidBuffer))
+      {
+        CAKEZ_ASSERT(0, "Failed to play Sound: %d", sound->ID);
+      }
+      xAudioVoice.voice->Start(0, 0);
+    }
+  }
+}
+
 char* platform_allocate_transient(uint32_t sizeInBytes)
 {
   char* buffer = 0;
@@ -610,3 +805,37 @@ char* platform_allocate_persistent(uint32_t sizeInBytes)
   return buffer;
   
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
