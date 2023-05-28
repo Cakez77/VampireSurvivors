@@ -10,9 +10,12 @@ enum EnemyType
 {
   ENEMY_TYPE_MOLTEN_MIDGET,
   ENEMY_TYPE_BAT,
+  ENEMY_TYPE_BAT_BOSS,
   ENEMY_TYPE_PLANT,
+  ENEMY_TYPE_PLANT_BOSS,
   ENEMY_TYPE_MARIO_PLANT,
   ENEMY_TYPE_HORNET,
+  ENEMY_TYPE_HORNET_BOSS,
   
   ENEMY_TYPE_COUNT
 };
@@ -20,6 +23,7 @@ enum EnemyType
 struct Entity
 {
   int ID;
+  bool boss = false;
   SpriteID spriteID = SPRITE_WHITE;
   Vec2 pos;
   Vec2 desiredDirection;
@@ -123,6 +127,7 @@ enum PickupType
 struct Pickup
 {
   bool triggered;
+  float time;
   PickupType type;
   Vec2 pos;
   Vec2 vel;
@@ -141,6 +146,7 @@ enum GameStateID
   GAME_STATE_MAIN_MENU,
   GAME_STATE_LEVEL_UP,
   GAME_STATE_RUNNING_LEVEL,
+  GAME_STATE_WON,
   
   GAME_STATE_COUNT
 };
@@ -166,6 +172,7 @@ struct GameState
   float totalTime;
   float spawnTimer;
   
+  int bossSpawnIdx = 0;
   int currentSpawnBreakPoint;
   float spawnsPerSecond;
   int spawnCounter;

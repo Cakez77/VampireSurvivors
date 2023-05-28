@@ -27,10 +27,18 @@ internal Vec2 get_screen_pos(Vec2 pos)
   return screenPos;
 }
 
-internal void spawn_enemy(EnemyType type, Vec2 pos)
+internal void spawn_enemy(EnemyType type, bool boss = false)
 {
   Entity e = {};
-  e.pos = pos;
+  
+  float randomAngle = (float)(rand() % 360) * 3.14f / 180.0f;
+  
+  Vec2 playerPos = gameState->player.pos;
+  Vec2 spawnDirection = {cosf(randomAngle), sinf(randomAngle)};
+  Vec2 spawnPos = playerPos + spawnDirection * gameState->playerScreenEdgeDist;
+  
+  e.boss = boss;
+  e.pos = spawnPos;
   e.ID = gameState->entityIDCounter++;
   
   switch(type)
@@ -54,10 +62,30 @@ internal void spawn_enemy(EnemyType type, Vec2 pos)
       break;
     }
     
+    case ENEMY_TYPE_BAT_BOSS:
+    {
+      e.spriteID = SPRITE_ENEMY_BAT_BOSS;
+      e.hp = 80;
+      e.attack = 20;
+      e.moveSpeed = 100.0f;
+      
+      break;
+    }
+    
     case ENEMY_TYPE_PLANT:
     {
       e.spriteID = SPRITE_ENEMY_PLANT;
       e.hp = 10;
+      e.attack = 10;
+      e.moveSpeed = 50.0f;
+      
+      break;
+    }
+    
+    case ENEMY_TYPE_PLANT_BOSS:
+    {
+      e.spriteID = SPRITE_ENEMY_PLANT_BOSS;
+      e.hp = 200;
       e.attack = 10;
       e.moveSpeed = 50.0f;
       
@@ -78,6 +106,16 @@ internal void spawn_enemy(EnemyType type, Vec2 pos)
     {
       e.spriteID = SPRITE_ENEMY_HORNET;
       e.hp = 10;
+      e.attack = 10;
+      e.moveSpeed = 200.0f;
+      
+      break;
+    }
+    
+    case ENEMY_TYPE_HORNET_BOSS:
+    {
+      e.spriteID = SPRITE_ENEMY_HORNET_BOSS;
+      e.hp = 400;
       e.attack = 10;
       e.moveSpeed = 200.0f;
       
@@ -750,6 +788,46 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       
       break;
     }
+    
+    case GAME_STATE_WON:
+    {
+      draw_sprite(SPRITE_MAIN_MENU_BACKGROUND, 
+                  vec_2(input->screenSize) / 2.0f, 
+                  vec_2(SCREEN_SIZE));
+      
+      draw_text("Thanks for playing! You won!",
+                {input->screenSize.x / 2.0f - 321.0f, 201.0f},
+                COLOR_BLACK);
+      draw_text("Thanks for playing! You won!",
+                {input->screenSize.x / 2.0f - 320.0f, 200.0f},
+                COLOR_RED);
+      
+      Vec2 buttonsPos = {input->screenSize.x / 2.0f, 400.0f};
+      Vec2 buttonsSize = {240.0f, 70.0f};
+      
+      // Main Menu Button
+      {
+        SpriteID buttonSprite = SPRITE_SLICED_MENU_02;
+        
+        if(point_in_rect(input->mousePosScreen ,
+                         {buttonsPos - buttonsSize / 2.0f, buttonsSize}))
+        {
+          buttonSprite = SPRITE_SLICED_MENU_03;
+          
+          if(is_key_pressed(KEY_LEFT_MOUSE))
+          {
+            gameState->state = GAME_STATE_MAIN_MENU;
+          }
+        }
+        
+        draw_sliced_sprite(buttonSprite, buttonsPos, buttonsSize);
+        draw_text("Main Menu", buttonsPos + Vec2{-102.0f});
+        buttonsPos.y += 100.0f;
+      }
+      
+      
+      break;
+    }
   }
 }
 
@@ -757,6 +835,29 @@ internal void update_level(float dt)
 {
   gameState->totalTime += dt;
   gameState->spawnTimer += dt / 1.0f;
+  
+  // Win condition, kill all bosses
+  bool bossPresent = false;
+  
+  struct BossSpawn
+  {
+    float time;
+    EnemyType enemyType;
+  };
+  
+  BossSpawn bossSpawns[]
+  {
+    {25.0f, ENEMY_TYPE_BAT_BOSS},
+    {50.0f, ENEMY_TYPE_PLANT_BOSS},
+    {120.0f, ENEMY_TYPE_HORNET_BOSS},
+  };
+  
+  // Check if we need to spawn a Boss
+  if(gameState->bossSpawnIdx < ArraySize(bossSpawns)
+     && bossSpawns[gameState->bossSpawnIdx].time < gameState->totalTime)
+  {
+    spawn_enemy(bossSpawns[gameState->bossSpawnIdx++].enemyType, true);
+  }
   
   // Spawning System
   {
@@ -794,14 +895,7 @@ internal void update_level(float dt)
     {
       if(gameState->enemies.count < MAX_ENEMIES)
       {
-        // In Radians
-        float randomAngle = (float)(rand() % 360) * 3.14f / 180.0f;
-        
-        Vec2 playerPos = gameState->player.pos;
-        Vec2 spawnDirection = {cosf(randomAngle), sinf(randomAngle)};
-        Vec2 spawnPos = playerPos + spawnDirection * gameState->playerScreenEdgeDist;
-        
-        spawn_enemy(enemyType, spawnPos);
+        spawn_enemy(enemyType);
         
         gameState->spawnTimer -= spawnRate;
       }
@@ -979,15 +1073,20 @@ internal void update_level(float dt)
             // @Note(tkap, 29/11/2022): Start by going away from the player, same effect as VS
             p->vel = normalize(p->pos - gameState->player.pos) * 60;
           }
+          
           if(p->triggered)
           {
+            float duration = 0.5f;
+            Vec2 oppositeDir = normalize(p->pos - gameState->player.pos);
             Vec2 dir = normalize(gameState->player.pos - p->pos);
-            p->vel += dir * dt * 500.0f;
             
-            // @Note(tkap, 29/11/2022): Capping the speed
-            p->vel = p->vel * 0.9f;
+            float t = min(p->time / duration, 1.0f);
+            p->vel = oppositeDir * (1.0f - t) + dir * t;
             
-            p->pos += p->vel * dt * 50.0f;
+            // Speed
+            p->pos += p->vel * dt * 500.0f;
+            
+            p->time += dt;
           }
           
           spriteID = p->type == 
@@ -1138,6 +1237,11 @@ internal void update_level(float dt)
             int enemyIdx = wc.enemyIndices[chunkEnemyIdx];
             Entity* enemy = &gameState->enemies[enemyIdx];
             
+            if(enemy->boss)
+            {
+              bossPresent = true;
+            }
+            
             float attackDelay = 0.5f;
             enemy->attackTime = min(enemy->attackTime + dt, attackDelay);
             enemy->garlicHitTimer = max(enemy->garlicHitTimer - dt, 0.0f);
@@ -1145,9 +1249,10 @@ internal void update_level(float dt)
             
             // Check if colliding with player
             {
-              Circle collider = get_collider(*enemy);
               Circle playerCollider = get_collider(gameState->player);
-              if(circle_collision(collider, playerCollider, 0))
+              Circle enemyCollider = get_collider(*enemy);
+              
+              if(circle_collision(enemyCollider, playerCollider, 0))
               {
                 if(enemy->attackTime >= attackDelay)
                 {
@@ -1238,6 +1343,36 @@ internal void update_level(float dt)
               enemy->pos += (enemy->pushDirection * pushForce * 50.0f + 
                              enemy->desiredDirection + 
                              enemy->seperationForce * 1000.0f) * dt;
+            }
+            
+            // Resolve Collisions with Obstacles
+            {
+              for(int obstacleIdx = 0; obstacleIdx < gameState->obstacles.count; obstacleIdx++)
+              {
+                Obstacle obstacle = gameState->obstacles[obstacleIdx];
+                obstacle.collider.size.x *= UNIT_SCALE;
+                obstacle.collider.size.y *= UNIT_SCALE;
+                
+                Circle enemyCollider = get_collider(*enemy);
+                
+                // Make the Collider bigger against Obstacles
+                enemyCollider.radius += 6.0f;
+                
+                // Get Chunk Offset
+                {
+                  float chunkWidth = (float)MAP_CHUNK_TILE_COUNT * 64.0f * UNIT_SCALE;
+                  
+                  // Which Tile to use
+                  enemyCollider.pos.x = fmodf(enemy->pos.x, chunkWidth);
+                  enemyCollider.pos.y = fmodf(enemy->pos.y, chunkWidth);
+                }
+                
+                Vec2 pushoutDir = {};
+                if(rect_circle_collision(obstacle.collider, enemyCollider, &pushoutDir))
+                {
+                  enemy->pos += pushoutDir;
+                }
+              }
             }
             
             // Draw
@@ -1566,6 +1701,58 @@ internal void update_level(float dt)
     }
   }
   // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		ACTIVE ATTACKS END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  
+  // Game time
+  {
+    char buffer[32] = {};
+    
+    int minutes = (int)(gameState->totalTime / 60.0f);
+    int seconds = (int)(fmodf(gameState->totalTime, 60));
+    
+    // Yes, I know this is terrible, it is how it is
+    if(minutes <= 0)
+    {
+      if(seconds <= 9)
+      {
+        sprintf(buffer, "00:0%d", seconds);
+      }
+      else
+      {
+        sprintf(buffer, "00:%d", seconds);
+      }
+    }
+    else if(minutes <= 9)
+    {
+      if(seconds <= 9)
+      {
+        sprintf(buffer, "0%d:0%d", minutes, seconds);
+      }
+      else
+      {
+        sprintf(buffer, "0%d:%d", minutes, seconds);
+      }
+    }
+    else
+    {
+      if(seconds <= 9)
+      {
+        sprintf(buffer, "%d:0%d", minutes, seconds);
+      }
+      else
+      {
+        sprintf(buffer, "%d:%d", minutes, seconds);
+      }
+    }
+    
+    draw_text(buffer, {input->screenSize.x / 2.0f - 20.0f, 40.0f});
+  }
+  
+  // Win condition
+  if(gameState->bossSpawnIdx >= ArraySize(bossSpawns) &&
+     !bossPresent)
+  {
+    gameState->state = GAME_STATE_WON;
+  }
   
   draw_exp_bar();
 }

@@ -10,32 +10,32 @@ uniform vec2 screenSize;
 // Input Buffers
 layout(std430, binding = 0) buffer TransfromSBO
 {
-    Transform transforms[];
+  Transform transforms[];
 };
 
 layout(std430, binding = 1) buffer MaterialSBO
 {
-    Material materials[];
+  Material materials[];
 };
 
 void main()
 {
   Transform t = transforms[gl_InstanceID];
-
-  t.pos.x = float(int(t.pos.x));
-  t.pos.y = float(int(t.pos.y));
-  t.size.x = float(int(t.size.x));
-  t.size.y = float(int(t.size.y));
-
+  
+  //t.pos.x = float(int(t.pos.x));
+  //t.pos.y = float(int(t.pos.y));
+  //t.size.x = float(int(t.size.x));
+  //t.size.y = float(int(t.size.y));
+  
   // If not drawing top left, then we align to center
   if(!bool(t.renderOptions & RENDER_OPTION_TOP_LEFT))
   {
     t.pos -= t.size / 2.0;
   }
   renderOptions = t.renderOptions;
-
+  
   // Inverts the Y- Coordinate, so that y = 0 is on the top
-
+  
   vec2 vertices[6] = 
   {
     t.pos,                             // Top Left
@@ -45,7 +45,7 @@ void main()
     vec2(t.pos + vec2(0.0, t.size.y)), // Bottom Left
     t.pos + t.size                     // Bottom Right
   };
-
+  
   // Normalize Position
   {
     vec2 vertexPos = vertices[gl_VertexID];
@@ -53,15 +53,15 @@ void main()
     vertexPos = 2.0 * (vertexPos / screenSize) - 1.0;
     gl_Position = vec4(vertexPos, 0.0, 1.0);
   }
-
+  
   color = materials[t.materialIdx].color;
-
+  
   // Texture Coords, with flipping
   float left;
   float right;
   float top;
   float bottom;
-
+  
   // 0.6 because I HATE OPENGL IT'S SHIT! -> it's not needed, removed
   if(bool(t.renderOptions & RENDER_OPTION_FLIP_X))
   {
@@ -92,6 +92,6 @@ void main()
     vec2(left, bottom),
     vec2(right, bottom)
   };
-
+  
   textureCoordsOut = vec2(textureCoords[gl_VertexID]);
 }

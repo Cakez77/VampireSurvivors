@@ -353,11 +353,11 @@ int main()
   
   gl_init(window, renderData);
   // @Note(tkap, 21/11/2022): To not blow up my pc
-  renderer_set_vertical_sync(true);
+  renderer_set_vertical_sync(false);
   
   // Audio
   init_audio();
-  platform_play_sound(SOUND_BACKGROUND);
+  platform_play_sound(SOUND_BACKGROUND, true);
   
   bool isGameInitialized = false;
   

@@ -15,9 +15,12 @@ enum SpriteID
   SPRITE_ENEMY_01,
   SPRITE_ENEMY_02,
   SPRITE_ENEMY_BAT,
+  SPRITE_ENEMY_BAT_BOSS,
   SPRITE_ENEMY_PLANT,
+  SPRITE_ENEMY_PLANT_BOSS,
   SPRITE_ENEMY_MARIO_PLANT,
   SPRITE_ENEMY_HORNET,
+  SPRITE_ENEMY_HORNET_BOSS,
   SPRITE_PLAYER_WHOSWHO,
   SPRITE_PLAYER_BELMOT,
   SPRITE_PLAYER_GANDALF,
@@ -99,9 +102,27 @@ internal Sprite get_sprite(SpriteID spriteID)
       break;
     }
     
+    case SPRITE_ENEMY_BAT_BOSS:
+    {
+      s.atlasOffset = {256, 80};
+      s.size = {48, 32};
+      s.subSize = {48, 32};
+      
+      break;
+    }
+    
     case SPRITE_ENEMY_PLANT:
     {
       s.atlasOffset = {384, 0};
+      s.size = {32, 32};
+      s.subSize = {32, 32};
+      
+      break;
+    }
+    
+    case SPRITE_ENEMY_PLANT_BOSS:
+    {
+      s.atlasOffset = {416, 0};
       s.size = {32, 32};
       s.subSize = {32, 32};
       
@@ -120,6 +141,15 @@ internal Sprite get_sprite(SpriteID spriteID)
     case SPRITE_ENEMY_HORNET:
     {
       s.atlasOffset = {256, 32};
+      s.size = {48, 48};
+      s.subSize = {48, 48};
+      
+      break;
+    }
+    
+    case SPRITE_ENEMY_HORNET_BOSS:
+    {
+      s.atlasOffset = {304, 32};
       s.size = {48, 48};
       s.subSize = {48, 48};
       
