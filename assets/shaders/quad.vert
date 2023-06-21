@@ -93,5 +93,16 @@ void main()
     vec2(right, bottom)
   };
   
+  // Local UV's
+  vec2 localUVS[6] = 
+  {
+    vec2(0.0, 0.0), // Top Left
+    vec2(0.0, 1.0), // Bottom Left
+    vec2(1.0, 0.0), // Top Right
+    vec2(1.0, 0.0), // Top Right
+    vec2(0.0, 1.0), // Bottom Left
+    vec2(1.0, 1.0), // Bottom Right
+  };
+  
   textureCoordsOut = vec2(textureCoords[gl_VertexID]);
 }

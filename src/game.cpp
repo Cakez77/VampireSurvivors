@@ -7,6 +7,7 @@
 #include "shared.h"
 #include "texts.h"
 #include "my_math.h"
+#include "sound.h"
 
 // Needed for Fucking rand() function, CRINGE
 #include <cstdLib>
@@ -233,7 +234,7 @@ internal void inflict_damage(Entity* e, int dmg)
   }
 }
 
-internal void add_damaging_area(WeaponID weaponID, SpriteID spriteID, Vec2 pos, 
+internal void add_damaging_area(WeaponID weaponID, SpriteID spriteID, Vec2 pos,
                                 Vec2 size, int damage, float duration)
 {
   DamagingArea da = {};
@@ -256,7 +257,7 @@ internal void draw_exp_bar()
   // Exp Bar
   {
     draw_sprite(SPRITE_EXP_BAR_LEFT, {4.0f, 16.0f}, {8.0f, 32.0f});
-    draw_sprite(SPRITE_EXP_BAR_MIDDLE, {input->screenSize.x / 2.0f, 16.0f}, 
+    draw_sprite(SPRITE_EXP_BAR_MIDDLE, {input->screenSize.x / 2.0f, 16.0f},
                 {input->screenSize.x - 16.0f, 32.0f});
     draw_sprite(SPRITE_EXP_BAR_RIGHT, {input->screenSize.x - 4.0f, 16.0f}, {8.0f, 32.0f});
     
@@ -280,9 +281,12 @@ __declspec(dllexport) void init_game(GameState* gameStateIn, Input* inputIn,
   gameState->state = GAME_STATE_MAIN_MENU;
 }
 
-__declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn, 
+__declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
                                        RenderData* renderDataIn, float dt)
 {
+  local_persist bool slowdown = false;
+  local_persist bool pause = false;
+  
   // Make sure we use the correct memory
   {
     if(gameState != gameStateIn ||
@@ -293,6 +297,26 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       input = inputIn;
       renderData = renderDataIn;
     }
+  }
+  
+  if(is_key_pressed(KEY_ESCAPE))
+  {
+    pause = !pause;
+  }
+  
+  if(is_key_pressed(KEY_F))
+  {
+    slowdown = !slowdown;
+  }
+  
+  if(pause)
+  {
+    dt = 0.0f;
+  }
+  
+  if(slowdown)
+  {
+    dt *= 0.25f;
   }
   
   // Draw Background
@@ -356,9 +380,9 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     {
       for(int tileRowIdx = -8; tileRowIdx <= 8; tileRowIdx++)
       {
-        Vec2 tilePos = 
-          screenMiddle - 
-          Vec2{playerTileOffsetX, playerTileOffsetY} - 
+        Vec2 tilePos =
+          screenMiddle -
+          Vec2{playerTileOffsetX, playerTileOffsetY} -
           halfTileSize;
         
         tilePos.x += (float)tileColIdx * tileSize.x;
@@ -442,32 +466,32 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
                     {.renderOptions = RENDER_OPTION_TOP_LEFT});
         
         // Draw in top chunk
-        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{0.0f, -chunkWidth}, 
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{0.0f, -chunkWidth},
                     obstacle.collider.size * 2.0f,
                     {.renderOptions = RENDER_OPTION_TOP_LEFT});
         
         // Draw in bottom chunk
-        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{0.0f, chunkWidth}, 
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{0.0f, chunkWidth},
                     obstacle.collider.size * 2.0f,
                     {.renderOptions = RENDER_OPTION_TOP_LEFT});
         
         // Draw in top left chunk
-        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{-chunkWidth, -chunkWidth}, 
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{-chunkWidth, -chunkWidth},
                     obstacle.collider.size * 2.0f,
                     {.renderOptions = RENDER_OPTION_TOP_LEFT});
         
         // Draw in top right chunk
-        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{chunkWidth, -chunkWidth}, 
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{chunkWidth, -chunkWidth},
                     obstacle.collider.size * 2.0f,
                     {.renderOptions = RENDER_OPTION_TOP_LEFT});
         
         // Draw in bottom left chunk
-        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{-chunkWidth, chunkWidth}, 
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{-chunkWidth, chunkWidth},
                     obstacle.collider.size * 2.0f,
                     {.renderOptions = RENDER_OPTION_TOP_LEFT});
         
         // Draw in bottom right chunk
-        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{chunkWidth, chunkWidth}, 
+        draw_sprite(obstacle.spriteID, obstaclePos + Vec2{chunkWidth, chunkWidth},
                     obstacle.collider.size * 2.0f,
                     {.renderOptions = RENDER_OPTION_TOP_LEFT});
         
@@ -554,7 +578,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
             gameState->player.type = PLAYER_TYPE_BELMOT;
           }
         }
-        draw_sliced_sprite(SPRITE_SLICED_MENU_01, rectPos + rectSize / 2.0f, 
+        draw_sliced_sprite(SPRITE_SLICED_MENU_01, rectPos + rectSize / 2.0f,
                            rectSize, {.color = boxColor});
         draw_sprite(SPRITE_PLAYER_BELMOT, rectPos + rectSize / 2.0f, heroSize);
         
@@ -576,7 +600,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
             gameState->player.type = PLAYER_TYPE_GANDALF;
           }
         }
-        draw_sliced_sprite(SPRITE_SLICED_MENU_01, rectPos + rectSize / 2.0f, 
+        draw_sliced_sprite(SPRITE_SLICED_MENU_01, rectPos + rectSize / 2.0f,
                            rectSize, {.color = boxColor});
         draw_sprite(SPRITE_PLAYER_GANDALF, rectPos + rectSize / 2.0f, heroSize);
         
@@ -598,7 +622,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
             gameState->player.type = PLAYER_TYPE_WHOSWHO;
           }
         }
-        draw_sliced_sprite(SPRITE_SLICED_MENU_01, rectPos + rectSize / 2.0f, 
+        draw_sliced_sprite(SPRITE_SLICED_MENU_01, rectPos + rectSize / 2.0f,
                            rectSize, {.color = boxColor});
         draw_sprite(SPRITE_PLAYER_WHOSWHO, rectPos + rectSize / 2.0f, heroSize);
         
@@ -640,7 +664,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
         int mapWidth = MAP_CHUNK_COUNT * chunkWidth;
         
         // Place the Player in the middle of the Map, meaning
-        // in the middle of a 15x15 chunk Grid, 
+        // in the middle of a 15x15 chunk Grid,
         gameState->player.pos = vec_2(mapWidth / 2);
         gameState->playerScreenEdgeDist = length(vec_2(SCREEN_SIZE - SCREEN_SIZE / 2)) + 50.0f;
         
@@ -659,8 +683,8 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
           Entity enemy = gameState->enemies[enemyIdx];
           
           Sprite s = get_sprite(enemy.spriteID);
-          draw_sprite(enemy.spriteID, get_screen_pos(enemy.pos), 
-                      vec_2(s.subSize) * enemy.scale, 
+          draw_sprite(enemy.spriteID, get_screen_pos(enemy.pos),
+                      vec_2(s.subSize) * enemy.scale,
                       {.color = enemy.color,
                         .renderOptions = enemy.desiredDirection.x > 0.0f? RENDER_OPTION_FLIP_X: 0});
         }
@@ -791,8 +815,8 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
     
     case GAME_STATE_WON:
     {
-      draw_sprite(SPRITE_MAIN_MENU_BACKGROUND, 
-                  vec_2(input->screenSize) / 2.0f, 
+      draw_sprite(SPRITE_MAIN_MENU_BACKGROUND,
+                  vec_2(input->screenSize) / 2.0f,
                   vec_2(SCREEN_SIZE));
       
       draw_text("Thanks for playing! You won!",
@@ -969,8 +993,8 @@ internal void update_level(float dt)
   
   // vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv		UPDATE DAMAGE NUMBERS START	vvvvvvvvvvvvvvvvvvvvvvvvv
   {
-    for(int damageNumberIdx = 0; 
-        damageNumberIdx < gameState->damageNumbers.count; 
+    for(int damageNumberIdx = 0;
+        damageNumberIdx < gameState->damageNumbers.count;
         damageNumberIdx++)
     {
       DamageNumber* dn = &gameState->damageNumbers[damageNumberIdx];
@@ -978,7 +1002,7 @@ internal void update_level(float dt)
       char numberText[16] = {};
       sprintf(numberText, "%d", dn->value);
       
-      draw_text(numberText, get_screen_pos(dn->pos));
+      //draw_text(numberText, get_screen_pos(dn->pos));
       
       dn->timer += dt;
       dn->pos.y -= 20.0f * dt;
@@ -1089,8 +1113,8 @@ internal void update_level(float dt)
             p->time += dt;
           }
           
-          spriteID = p->type == 
-            PICKUP_TYPE_EXP_BLUE? SPRITE_CRYSTAL_BLUE: p->type == PICKUP_TYPE_EXP_GREEN? 
+          spriteID = p->type ==
+            PICKUP_TYPE_EXP_BLUE? SPRITE_CRYSTAL_BLUE: p->type == PICKUP_TYPE_EXP_GREEN?
             SPRITE_CRYSTAL_GREEN : SPRITE_CRYSTAL_RED;
           break;
         }
@@ -1102,7 +1126,7 @@ internal void update_level(float dt)
       if(point_in_circle(p->pos, playerPickupCollider))
       {
         
-        int expCount = p->type == PICKUP_TYPE_EXP_RED? 
+        int expCount = p->type == PICKUP_TYPE_EXP_RED?
           2500 : p->type == PICKUP_TYPE_EXP_GREEN? 50 : 1;
         
         gameState->player.exp += expCount;
@@ -1139,7 +1163,7 @@ internal void update_level(float dt)
           float percentDone = da->timePassed / da->duration;
           Vec2 size = da->size * percentDone;
           
-          draw_sprite(da->spriteID, get_screen_pos(da->pos), size, 
+          draw_sprite(da->spriteID, get_screen_pos(da->pos), size,
                       {.renderOptions = da->pos.x < gameState->player.pos.x? RENDER_OPTION_FLIP_X: 0});
           
           Rect daCollider = {da->pos - size / 2.0, size};
@@ -1159,7 +1183,7 @@ internal void update_level(float dt)
             
             if(rect_circle_collision(daCollider, enemyCollider, 0))
             {
-              // Damage 
+              // Damage
               inflict_damage(enemy, da->damage);
               
               if(enemy->hp <= 0)
@@ -1226,7 +1250,7 @@ internal void update_level(float dt)
         {
           WorldChunk wc = gameState->worldGrid[chunkColIdx][chunkRowIdx];
           
-          Vec2 chunkOffset = 
+          Vec2 chunkOffset =
             Vec2{-200.0f + 100.0f * (float)chunkColIdx, -200 + 100.0f * (float)chunkRowIdx};
           
           Vec2 chunkWorldPos = gameState->player.pos + chunkOffset;
@@ -1316,7 +1340,7 @@ internal void update_level(float dt)
                       
                       if(neighbourDist == 0.0f)
                       {
-                        Vec2 randomDirections[] = 
+                        Vec2 randomDirections[] =
                         {
                           {1.0f, 0.0f}, // To the right
                           {-1.0f, 0.0f}, // To the Left
@@ -1340,8 +1364,8 @@ internal void update_level(float dt)
             // Move the Enemy
             {
               float pushForce = ease_in_quad(enemy->pushTime);
-              enemy->pos += (enemy->pushDirection * pushForce * 50.0f + 
-                             enemy->desiredDirection + 
+              enemy->pos += (enemy->pushDirection * pushForce * 50.0f +
+                             enemy->desiredDirection +
                              enemy->seperationForce * 1000.0f) * dt;
             }
             
@@ -1378,8 +1402,8 @@ internal void update_level(float dt)
             // Draw
             {
               Sprite s = get_sprite(enemy->spriteID);
-              draw_sprite(enemy->spriteID, get_screen_pos(enemy->pos), 
-                          vec_2(s.subSize) * enemy->scale, 
+              draw_sprite(enemy->spriteID, get_screen_pos(enemy->pos),
+                          vec_2(s.subSize) * enemy->scale,
                           {.color = enemy->color,
                             .renderOptions = enemy->desiredDirection.x > 0.0f? RENDER_OPTION_FLIP_X: 0});
             }
@@ -1615,7 +1639,7 @@ internal void update_level(float dt)
         
         // Actual HP
         float hpPercent = (float)p->hp / (float)p->maxHP;
-        draw_quad(barPos + Vec2{-(1.0f - hpPercent) * 69.0f / 2.0f, 50.0f}, 
+        draw_quad(barPos + Vec2{-(1.0f - hpPercent) * 69.0f / 2.0f, 50.0f},
                   {69.0f * hpPercent, 10.0f}, {.color = COLOR_RED});
       }
     }
@@ -1650,13 +1674,13 @@ internal void update_level(float dt)
           {
             // Spawn Whip
             Sprite s = get_sprite(SPRITE_EFFECT_WHIP);
-            add_damaging_area(WEAPON_WHIP, SPRITE_EFFECT_WHIP, 
-                              aa->pos + offsets[whip->currentSlashCount++], 
-                              vec_2(s.subSize) * 2.0f, aa->damage, 0.25f); 
+            add_damaging_area(WEAPON_WHIP, SPRITE_EFFECT_WHIP,
+                              aa->pos + offsets[whip->currentSlashCount++],
+                              vec_2(s.subSize) * 2.0f, aa->damage, 0.25f);
           }
           
           break;
-        } 
+        }
         
         case WEAPON_MAGMA_RING:
         {
@@ -1673,7 +1697,7 @@ internal void update_level(float dt)
           if(point_in_rect(aa->pos, collisionRect))
           {
             Sprite s = get_sprite(SPRITE_EFFECT_MAGMA_PUDDLE);
-            add_damaging_area(WEAPON_MAGMA_RING, SPRITE_EFFECT_MAGMA_PUDDLE, aa->targetPos, 
+            add_damaging_area(WEAPON_MAGMA_RING, SPRITE_EFFECT_MAGMA_PUDDLE, aa->targetPos,
                               vec_2(s.subSize) * UNIT_SCALE * aoeScale, damage, duration);
             
             gameState->activeAttacks.remove_idx_and_swap(aaIdx--);
@@ -1681,7 +1705,7 @@ internal void update_level(float dt)
           else
           {
             Sprite s = get_sprite(SPRITE_EFFECT_MAGMA_BALL);
-            draw_sprite(SPRITE_EFFECT_MAGMA_BALL, get_screen_pos(aa->pos), 
+            draw_sprite(SPRITE_EFFECT_MAGMA_BALL, get_screen_pos(aa->pos),
                         vec_2(s.subSize) * UNIT_SCALE);
           }
           
@@ -1694,8 +1718,8 @@ internal void update_level(float dt)
       aa->timePassed += dt;
       
       // Active Attack ran out
-      if(aa->timePassed >= skillDuration) 
-      { 
+      if(aa->timePassed >= skillDuration)
+      {
         gameState->activeAttacks.remove_idx_and_swap(aaIdx--);
       }
     }

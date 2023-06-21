@@ -1,6 +1,5 @@
 #pragma once
 
-
 enum TextColor
 {
   TEXT_COLOR_WHITE,

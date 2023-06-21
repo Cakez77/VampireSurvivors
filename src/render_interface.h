@@ -48,4 +48,5 @@ void draw_sliced_sprite(SpriteID spriteID, Vec2 pos, Vec2 size, DrawData drawDat
 void draw_line(Vec2 a, Vec2 b, Vec4 color = COLOR_WHITE);
 void draw_circle(Circle c, Vec4 color = COLOR_WHITE);
 void draw_box(Vec2 pos, Vec2 size, Vec4 color = COLOR_WHITE, float lineThickness = 5.0f);
-void draw_text(char* text, Vec2 pos, Vec4 color = COLOR_WHITE, RenderOptions renderOptions = 0);
+void draw_text(char* text, Vec2 pos, Vec4 color = COLOR_WHITE, 
+               RenderOptions renderOptions = 0);

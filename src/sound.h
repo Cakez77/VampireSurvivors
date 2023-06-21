@@ -40,12 +40,33 @@ struct Sound
   char* data;
 };
 
+struct QueuedSound
+{
+  SoundID ID;
+  bool loop = false;
+};
+
 struct SoundState
 {
+  int queuedSoundCount;
+  QueuedSound queuedSounds[MAX_PLAYING_SOUNDS];
+  
   int bytesUsed;
   char* buffer;
   int allocatedSoundsCount;
   Sound allocatedSounds[MAX_ALLOCATED_SOUNDS];
 };
 
-global_variable SoundState soundState;
+global_variable SoundState* soundState;
+
+void play_sound(SoundID soundID, bool loop = false)
+{
+  if(soundState->queuedSoundCount < MAX_PLAYING_SOUNDS)
+  {
+    soundState->queuedSounds[soundState->queuedSoundCount++] = {soundID, loop};
+  }
+  else
+  {
+    assert(0);
+  }
+}

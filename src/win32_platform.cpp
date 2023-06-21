@@ -238,8 +238,8 @@ internal void platform_update_window()
 internal bool init_audio()
 {
   // Allocate Memory
-  soundState.buffer = platform_allocate_persistent(MAX_BYTES_SOUND_BUFFER);
-  if(!soundState.buffer)
+  soundState->buffer = platform_allocate_persistent(MAX_BYTES_SOUND_BUFFER);
+  if(!soundState->buffer)
   {
     CAKEZ_ASSERT(0, "Failed to allocate Sound Buffer");
     return false;
@@ -318,6 +318,13 @@ int main()
   if(!input)
   {
     CAKEZ_FATAL("Failed to allocate Memory for Input!");
+    return -1;
+  }
+  
+  soundState = (SoundState*)platform_allocate_persistent(sizeof(SoundState));
+  if(!input)
+  {
+    CAKEZ_FATAL("Failed to allocate Memory for Sounds!");
     return -1;
   }
   
@@ -400,13 +407,13 @@ int main()
         CAKEZ_ASSERT(update_game, "Failed to load update_game function from game DLL");
       }
     }
-    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		DLL STUFF END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     
     if(!isGameInitialized)
     {
       isGameInitialized = true;
       init_game(gameState, input, renderData);
     }    
+    // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^		DLL STUFF END		^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
     
     
     // Reset temporary memory
@@ -690,9 +697,9 @@ long long platform_last_edit_timestamp(char* path)
 void platform_play_sound(SoundID soundID, bool loop)
 {
   Sound* sound = 0;
-  for(int soundIdx = 0; soundIdx < soundState.allocatedSoundsCount; soundIdx++)
+  for(int soundIdx = 0; soundIdx < soundState->allocatedSoundsCount; soundIdx++)
   {
-    Sound* s = &soundState.allocatedSounds[soundIdx];
+    Sound* s = &soundState->allocatedSounds[soundIdx];
     
     if(s->ID == soundID)
     {
@@ -703,9 +710,9 @@ void platform_play_sound(SoundID soundID, bool loop)
   
   if(!sound)
   {
-    if(soundState.allocatedSoundsCount < MAX_ALLOCATED_SOUNDS)
+    if(soundState->allocatedSoundsCount < MAX_ALLOCATED_SOUNDS)
     {
-      sound = &soundState.allocatedSounds[soundState.allocatedSoundsCount++];
+      sound = &soundState->allocatedSounds[soundState->allocatedSoundsCount++];
     }
     
     // Load a new file from disk and copy that into the sound state
@@ -721,16 +728,16 @@ void platform_play_sound(SoundID soundID, bool loop)
         dataChunk = (WaveDataChunk*)((char*)(dataChunk) + sizeof(WaveDataChunk) + dataChunk->dataSize);
       }
       
-      if((int)dataChunk->dataSize < MAX_BYTES_SOUND_BUFFER - soundState.bytesUsed)
+      if((int)dataChunk->dataSize < MAX_BYTES_SOUND_BUFFER - soundState->bytesUsed)
       {
         sound->ID = soundID;
-        sound->data = &soundState.buffer[soundState.bytesUsed];
+        sound->data = &soundState->buffer[soundState->bytesUsed];
         sound->sizeInBytes = dataChunk->dataSize;
         
         char* soundData = (char*)dataChunk + sizeof(WaveDataChunk);
         
         memcpy(sound->data, soundData, dataChunk->dataSize);
-        soundState.bytesUsed += dataChunk->dataSize;
+        soundState->bytesUsed += dataChunk->dataSize;
       }
       else
       {

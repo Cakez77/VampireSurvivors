@@ -49,6 +49,7 @@ enum SpriteID
   SPRITE_OBSTACLE_LOG_32,
   SPRITE_OBSTACLE_TREE_STUMP_48_32,
   SPRITE_OBSTACLE_PILLAR_BOTTOM_32,
+  SPRITE_TREE_01_48_64,
   
   SPRITE_COUNT,
 };
@@ -404,6 +405,15 @@ internal Sprite get_sprite(SpriteID spriteID)
       s.atlasOffset = {160, 144};
       s.size = {32, 32};
       s.subSize = {32, 32};
+      
+      break;
+    }
+    
+    case SPRITE_TREE_01_48_64:
+    {
+      s.atlasOffset = {352, 32};
+      s.size = {48, 64};
+      s.subSize = {48, 64};
       
       break;
     }

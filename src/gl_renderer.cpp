@@ -192,7 +192,7 @@ internal bool init_font(int fontSize)
     glBindTexture(GL_TEXTURE_2D, glContext.fontAtlasID);
     
     // set the texture wrapping/filtering options (on the currently bound texture object)
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);	
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -211,7 +211,7 @@ internal bool gl_init(void* window, RenderData* renderData)
   
   // Fake Window Bullshit
   {
-    HWND fake_window = CreateWindowEx(0,"cakez_window_class", "window name", WS_OVERLAPPEDWINDOW, 
+    HWND fake_window = CreateWindowEx(0,"cakez_window_class", "window name", WS_OVERLAPPEDWINDOW,
                                       CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
                                       CW_USEDEFAULT, 0, 0, GetModuleHandleA(0), 0);
     
@@ -265,9 +265,9 @@ internal bool gl_init(void* window, RenderData* renderData)
       return false;
     }
     
-    wglChoosePixelFormatARB = 
+    wglChoosePixelFormatARB =
     (PFNWGLCHOOSEPIXELFORMATARBPROC)get_gl_proc("wglChoosePixelFormatARB");
-    wglCreateContextAttribsARB = 
+    wglCreateContextAttribsARB =
     (PFNWGLCREATECONTEXTATTRIBSARBPROC)get_gl_proc("wglCreateContextAttribsARB");
     
     wglMakeCurrent(fake_dc, 0);
@@ -374,7 +374,7 @@ internal bool gl_init(void* window, RenderData* renderData)
     
     // Vertex Shader
     {
-      char* vertexSources[] = 
+      char* vertexSources[] =
       {
         "#version 430 core\n",
         shaderHeader,
@@ -402,7 +402,7 @@ internal bool gl_init(void* window, RenderData* renderData)
     
     // Fragment Shader
     {
-      char* fragSources[] = 
+      char* fragSources[] =
       {
         "#version 430 core\n",
         shaderHeader,
@@ -464,7 +464,7 @@ internal bool gl_init(void* window, RenderData* renderData)
       glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, glContext.materialSBOID);
     }
     
-    // Transform Stroage Buffer 
+    // Transform Stroage Buffer
     {
       glGenBuffers(1, &glContext.transformSBOID);
       
@@ -481,13 +481,13 @@ internal bool gl_init(void* window, RenderData* renderData)
       glBindTexture(GL_TEXTURE_2D, glContext.textureAtlas01.ID);
       
       // set the texture wrapping/filtering options (on the currently bound texture object)
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
       // This setting only matters when using the GLSL texture() function
-      // When you use texelFetch() this setting has no effect, 
+      // When you use texelFetch() this setting has no effect,
       // because texelFetch is designed for this purpose
       // See: https://interactiveimmersive.io/blog/glsl/glsl-data-tricks/
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR); 
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
       
       // load and generate the texture
@@ -542,14 +542,10 @@ internal void hot_reload_textures()
     if (data)
     {
       glContext.textureAtlas01.lastEditTimestamp = get_last_edit_timestamp(TEXTURE_ATLAS_01);
-      CAKEZ_ASSERT(glContext.textureAtlas01.lastEditTimestamp > 0,
-                   "Failed getting edit Timestamp from TextureID: %d", TEXTURE_ATLAS_01);
-      // The atlas is sRGB exported
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    }
-    else
-    {
-      CAKEZ_ASSERT(0, "Failed to get data for TextureID: %d", TEXTURE_ATLAS_01);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB8_ALPHA8, width, height, 
+                   0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+      
+      Sleep(100);
     }
   }
 }
@@ -568,7 +564,7 @@ internal bool gl_render()
     // Copy Materials to GPU
     {
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.materialSBOID);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, 
+      glBufferData(GL_SHADER_STORAGE_BUFFER,
                    sizeof(Material) * glContext.renderData->materials.count,
                    glContext.renderData->materials.elements, GL_STATIC_DRAW);
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
@@ -580,7 +576,7 @@ internal bool gl_render()
     {
       // Use the Buffer, (active)
       glBindBuffer(GL_SHADER_STORAGE_BUFFER, glContext.transformSBOID);
-      glBufferData(GL_SHADER_STORAGE_BUFFER, 
+      glBufferData(GL_SHADER_STORAGE_BUFFER,
                    sizeof(Transform) * glContext.renderData->transforms.count,
                    glContext.renderData->transforms.elements, GL_STATIC_DRAW);
       
@@ -593,7 +589,7 @@ internal bool gl_render()
       glEnable(GL_BLEND);
       glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
       
-      glBufferData(GL_SHADER_STORAGE_BUFFER, 
+      glBufferData(GL_SHADER_STORAGE_BUFFER,
                    sizeof(Transform) * glContext.renderData->transpTransforms.count,
                    glContext.renderData->transpTransforms.elements, GL_STATIC_DRAW);
       

@@ -4,6 +4,7 @@
 #define EPSILON 0.000001f
 
 #define internal static
+#define local_persist static
 #define global_variable static
 
 #define KB(x) ((uint64_t)1024 * x)
