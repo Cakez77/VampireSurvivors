@@ -1002,7 +1002,7 @@ internal void update_level(float dt)
       char numberText[16] = {};
       sprintf(numberText, "%d", dn->value);
       
-      //draw_text(numberText, get_screen_pos(dn->pos));
+      draw_text(numberText, get_screen_pos(dn->pos));
       
       dn->timer += dt;
       dn->pos.y -= 20.0f * dt;
