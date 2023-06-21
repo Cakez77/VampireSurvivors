@@ -3,12 +3,14 @@ A small and simple Vampire Survivors clone made with OpenGL
 
 # Build Guide
 
-To build the game you need Visual Sudio 2022, get it here:
+1. To build the game you need Visual Sudio 2022, get it here:
 https://visualstudio.microsoft.com/vs/
 
-Once installed, check `build.bat` and make sure the path the `vcvars.bat` is correct on your system.
-If it's not corret, then update the path!
+2. Once installed, check `build.bat` and make sure the path:
+call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"`
 
-Call `build.bat` and the program should build.
+3. If it's not corret, then update the path to match your system!
+
+4. Call `build.bat` and the program should build.
 
 Enjoy
