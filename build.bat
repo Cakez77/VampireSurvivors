@@ -1,11 +1,6 @@
 @ECHO OFF
 
-@REM taskkill /IM vsClone.exe /F
-
-@REM SET linksCLANG= -luser32.lib
-@REM clang src/win32_platform.cpp -o simpleTD.exe %linksCLANG%
-
-@REM call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
 
 SET warnings=/W4 /wd4505 /wd4100
 SET includesCL=/Ithird_party /Ithird_party/Include
