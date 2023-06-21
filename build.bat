@@ -16,6 +16,3 @@ cl /nologo /std:c++20 %warnings% /Zc:strictStrings- /LD /FC src/game.cpp /Z7 %de
 @REM base executable
 cl /nologo /std:c++20 %warnings% /Zc:strictStrings- /FC src/win32_platform.cpp /Z7 /FevsClone.exe %definesCL% %includesCL% %linksCL% /INCREMENTAL:NO
 
-@REM Play sound to indicate Building is completed
-@REM @Note(tkap, 29/11/2022): This is to make the powershell stuff not block the terminal. Otherwise the terminal is blocked until the sound finishes playing
-@REM start /MIN "" powershell -c (New-Object Media.SoundPlayer ".\assets\sounds\building-completed.wav").PlaySync()
