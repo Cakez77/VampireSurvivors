@@ -630,6 +630,8 @@ internal void renderer_resize()
   if(glContext.initialized)
   {
     glViewport(0, 0, (int)input->screenSize.x, (int)input->screenSize.y);
-    glUniform2fv(glContext.screenSizeID, 1, (float*)&input->screenSize);
+    
+    Vec2 screenSize = vec_2(input->screenSize);
+    glUniform2fv(glContext.screenSizeID, 1, &screenSize.x);
   }
 }
