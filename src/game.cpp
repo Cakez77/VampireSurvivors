@@ -11,6 +11,7 @@
 
 // Needed for Fucking rand() function, CRINGE
 #include <cstdLib>
+#include <string>
 
 //#############################################################
 //                  Internal Functions
@@ -230,6 +231,7 @@ internal void inflict_damage(Entity* e, int dmg)
       pickup.type = PICKUP_TYPE_EXP_BLUE;
       pickup.pos = e->pos;
       gameState->pickups.add(pickup);
+      gameState->enemiesKilled++;
     }
   }
 }
@@ -252,6 +254,40 @@ internal void add_damaging_area(WeaponID weaponID, SpriteID spriteID, Vec2 pos,
 //#############################################################
 //                  Define funcions
 //#############################################################
+internal void draw_weapons() {
+  Vec2 weaponsPos = {10.0f, 60.0f};
+  Vec2 weaponsSize = {100.0f, 50.0f};
+  
+  for(int weaponIdx = 0; weaponIdx < gameState->player.weapons.count; weaponIdx++)
+  {
+    Weapon* weapon = &gameState->player.weapons[weaponIdx];
+    
+    SpriteID weaponSpriteID = SPRITE_ICON_WHIP;
+    switch(weapon->ID)
+    {
+      case WEAPON_WHIP:
+        weaponSpriteID = SPRITE_ICON_WHIP;
+        break;
+      case WEAPON_GARLIC:
+        weaponSpriteID = SPRITE_ICON_CIRCLE;
+        break;
+      case WEAPON_MAGMA_RING:
+        weaponSpriteID = SPRITE_ICON_MAGMA_RING;
+        break;
+    }
+    
+    Sprite s = get_sprite(weaponSpriteID);
+    Vec2 weaponPos = weaponsPos + Vec2{weaponsSize.x / 2.0f, weaponsSize.y / 2.0f};
+    draw_sliced_sprite(SPRITE_SLICED_MENU_01, weaponPos, weaponsSize);
+    draw_sprite(weaponSpriteID, weaponPos - Vec2{s.subSize.x / 1.1f, 0.0f}, vec_2(s.subSize) * 2.0f);
+    std::string weaponlvl = std::to_string(weapon->level);
+    weaponlvl = weaponlvl.c_str();
+    char* cweaponlvl = &weaponlvl[0];
+    draw_text(cweaponlvl, weaponPos + Vec2{10.0f, 0.0f});
+    weaponsPos.y += 50.0f;
+  }
+}
+
 internal void draw_exp_bar()
 {
   // Exp Bar
@@ -690,6 +726,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
         }
       }
       
+      draw_weapons();
       draw_exp_bar();
       
       Vec4 boxColor = COLOR_WHITE;
@@ -813,20 +850,134 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       break;
     }
     
+    case GAME_STATE_LOST:
+    {
+      draw_sprite(SPRITE_MAIN_MENU_BACKGROUND,
+                  vec_2(input->screenSize) / 2.0f,
+                  vec_2(SCREEN_SIZE));
+      
+      Vec4 boxColor = COLOR_WHITE;
+      Vec2 OverInfoMenuSize = {800.0f, 600.0f};
+      Vec2 OverInfoMenuPos = vec_2(input->screenSize) / 2.0f;
+      draw_text("You Lost!", OverInfoMenuPos + Vec2{-100.0f, - 250.0f});
+      draw_sliced_sprite(SPRITE_SLICED_MENU_01, OverInfoMenuPos, OverInfoMenuSize);
+      // 생존시간, 도달 레벨, 처치한 적, 무기 레벨 표기
+      Vec2 contentPos = OverInfoMenuPos + Vec2{-280.0f, -150.0f};
+      std::string info = "Survival Time: " + std::to_string(gameState->totalTime) + "\n" +
+           "Reached Level: " + std::to_string(gameState->player.level) + "\n" +
+           "Enemies Killed: " + std::to_string(gameState->enemiesKilled) + "\n";
+      info = info.c_str();
+      char* cinfo = &info[0];
+      // weapon 이미지 불러오기
+      draw_text(cinfo, contentPos);
+      std:: string weaponInfo = "";
+      // weapon에는 whip, garlic, magma ring가 있음
+      Vec2 exPos = {contentPos.x - 25.0f, contentPos.y + 100.0f};
+      for(int weaponIdx = 0; weaponIdx < gameState->player.weapons.count; weaponIdx++)
+      {
+        Weapon* weapon = &gameState->player.weapons[weaponIdx];
+        std::string weaponName = "";
+        switch(weapon->ID)
+        {
+          case WEAPON_WHIP:
+            draw_sprite(SPRITE_ICON_WHIP, exPos, vec_2(30.0f));
+            exPos.y += 50.0f;
+            weaponName = "Whip";
+            break;
+          case WEAPON_GARLIC:
+            draw_sprite(SPRITE_ICON_CIRCLE, exPos, vec_2(30.0f));
+            exPos.y += 50.0f;
+            weaponName = "Garlic";
+            break;
+          case WEAPON_MAGMA_RING:
+            draw_sprite(SPRITE_ICON_MAGMA_RING, exPos, vec_2(30.0f));
+            exPos.y += 50.0f;
+            weaponName = "Magma Ring";
+            break;
+        }
+        weaponInfo += weaponName + " Level: " + std::to_string(weapon->level) + "\n\n";
+      }
+      weaponInfo = weaponInfo.c_str();
+      char* cweaponInfo = &weaponInfo[0];
+      draw_text(cweaponInfo, contentPos + Vec2{0.0f, 100.0f});
+      
+      Vec2 buttonsPos = {input->screenSize.x / 2.0f, 650.0f};
+      Vec2 buttonsSize = {240.0f, 70.0f};
+      
+      // Main Menu Button
+      {
+        SpriteID buttonSprite = SPRITE_SLICED_MENU_02;
+      
+        if(point_in_rect(input->mousePosScreen ,
+                         {buttonsPos - buttonsSize / 2.0f, buttonsSize}))
+        {
+          buttonSprite = SPRITE_SLICED_MENU_03;
+      
+          if(is_key_pressed(KEY_LEFT_MOUSE))
+          {
+            gameState->state = GAME_STATE_MAIN_MENU;
+          }
+        }
+      
+        draw_sliced_sprite(buttonSprite, buttonsPos, buttonsSize);
+        draw_text("Main Menu", buttonsPos + Vec2{-102.0f});
+        buttonsPos.y += 100.0f;
+      }
+      
+      break;
+    }
     case GAME_STATE_WON:
     {
       draw_sprite(SPRITE_MAIN_MENU_BACKGROUND,
                   vec_2(input->screenSize) / 2.0f,
                   vec_2(SCREEN_SIZE));
       
-      draw_text("Thanks for playing! You won!",
-                {input->screenSize.x / 2.0f - 321.0f, 201.0f},
-                COLOR_BLACK);
-      draw_text("Thanks for playing! You won!",
-                {input->screenSize.x / 2.0f - 320.0f, 200.0f},
-                COLOR_RED);
+      Vec4 boxColor = COLOR_WHITE;
+      Vec2 OverInfoMenuSize = {800.0f, 600.0f};
+      Vec2 OverInfoMenuPos = vec_2(input->screenSize) / 2.0f;
+      draw_text("You Win!", OverInfoMenuPos + Vec2{-100.0f, - 250.0f});
+      draw_sliced_sprite(SPRITE_SLICED_MENU_01, OverInfoMenuPos, OverInfoMenuSize);
+      // 생존시간, 도달 레벨, 처치한 적, 무기 레벨 표기
+      Vec2 contentPos = OverInfoMenuPos + Vec2{-280.0f, -150.0f};
+      std::string info = "Survival Time: " + std::to_string(gameState->totalTime) + "\n" +
+           "Reached Level: " + std::to_string(gameState->player.level) + "\n" +
+           "Enemies Killed: " + std::to_string(gameState->enemiesKilled) + "\n";
+      info = info.c_str();
+      char* cinfo = &info[0];
+      // weapon 이미지 불러오기
+      draw_text(cinfo, contentPos);
+      std:: string weaponInfo = "";
+      // weapon에는 whip, garlic, magma ring가 있음
+      Vec2 exPos = {contentPos.x - 25.0f, contentPos.y + 100.0f};
+      for(int weaponIdx = 0; weaponIdx < gameState->player.weapons.count; weaponIdx++)
+      {
+        Weapon* weapon = &gameState->player.weapons[weaponIdx];
+        std::string weaponName = "";
+        switch(weapon->ID)
+        {
+          case WEAPON_WHIP:
+            draw_sprite(SPRITE_ICON_WHIP, exPos, vec_2(30.0f));
+            exPos.y += 50.0f;
+            weaponName = "Whip";
+            break;
+          case WEAPON_GARLIC:
+            draw_sprite(SPRITE_ICON_CIRCLE, exPos, vec_2(30.0f));
+            exPos.y += 50.0f;
+            weaponName = "Garlic";
+            break;
+          case WEAPON_MAGMA_RING:
+            draw_sprite(SPRITE_ICON_MAGMA_RING, exPos, vec_2(30.0f));
+            exPos.y += 50.0f;
+            weaponName = "Magma Ring";
+            break;
+        }
+        weaponInfo += weaponName + " Level: " + std::to_string(weapon->level) + "\n\n";
+      }
+      weaponInfo = weaponInfo.c_str();
+      char* cweaponInfo = &weaponInfo[0];
+      draw_text(cweaponInfo, contentPos + Vec2{0.0f, 100.0f});
       
-      Vec2 buttonsPos = {input->screenSize.x / 2.0f, 400.0f};
+      Vec2 buttonsPos = {input->screenSize.x / 2.0f, 650.0f};
       Vec2 buttonsSize = {240.0f, 70.0f};
       
       // Main Menu Button
@@ -1002,7 +1153,7 @@ internal void update_level(float dt)
       char numberText[16] = {};
       sprintf(numberText, "%d", dn->value);
       
-      //draw_text(numberText, get_screen_pos(dn->pos));
+      draw_text(numberText, get_screen_pos(dn->pos));
       
       dn->timer += dt;
       dn->pos.y -= 20.0f * dt;
@@ -1285,8 +1436,7 @@ internal void update_level(float dt)
                   
                   if(gameState->player.hp <= 0)
                   {
-                    init_game(gameState, input, renderData);
-                    return;
+                    gameState->state = GAME_STATE_LOST;
                   }
                 }
               }
@@ -1768,7 +1918,7 @@ internal void update_level(float dt)
       }
     }
     
-    draw_text(buffer, {input->screenSize.x / 2.0f - 20.0f, 40.0f});
+    draw_text(buffer, {input->screenSize.x / 2.0f - 20.0f, 45.0f});
   }
   
   // Win condition
@@ -1778,5 +1928,6 @@ internal void update_level(float dt)
     gameState->state = GAME_STATE_WON;
   }
   
+  draw_weapons();
   draw_exp_bar();
 }

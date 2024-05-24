@@ -147,6 +147,7 @@ enum GameStateID
   GAME_STATE_LEVEL_UP,
   GAME_STATE_RUNNING_LEVEL,
   GAME_STATE_WON,
+  GAME_STATE_LOST,
   
   GAME_STATE_COUNT
 };
@@ -180,6 +181,8 @@ struct GameState
   
   bool mergeBlueCrystals;
   bool mergeGreenCrystals;
+
+  int enemiesKilled = 0;
   
   Array<DamageNumber, MAX_DAMAGE_NUMBERS> damageNumbers;
   Array<Entity, MAX_ENEMIES> enemies;
