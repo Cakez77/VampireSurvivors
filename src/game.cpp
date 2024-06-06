@@ -322,6 +322,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
 {
   local_persist bool slowdown = false;
   local_persist bool pause = false;
+  global_variable int erase_cnt = 3;
   
   // Make sure we use the correct memory
   {
@@ -353,6 +354,14 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
   if(slowdown)
   {
     dt *= 0.25f;
+  }
+
+  if(is_key_pressed(KEY_R)) // 적들을 없애는 키, 최대 3번
+  {
+    if(erase_cnt > 0) {
+      gameState->enemies.clear();
+      erase_cnt--;
+    }
   }
   
   // Draw Background
@@ -1433,6 +1442,10 @@ internal void update_level(float dt)
                 {
                   gameState->player.hp -= enemy->attack;
                   enemy->attackTime = 0.0f;
+                    DamageNumber dn = {};
+                    dn.pos = gameState->player.pos;
+                    dn.value = enemy->attack;
+                    gameState->damageNumbers.add(dn);
                   
                   if(gameState->player.hp <= 0)
                   {
