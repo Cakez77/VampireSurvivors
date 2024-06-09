@@ -254,37 +254,37 @@ internal void add_damaging_area(WeaponID weaponID, SpriteID spriteID, Vec2 pos,
 //#############################################################
 //                  Define funcions
 //#############################################################
-internal void draw_weapons() {
-  Vec2 weaponsPos = {10.0f, 60.0f};
-  Vec2 weaponsSize = {100.0f, 50.0f};
+internal void draw_weapons() { // 현재 소지하고 있는 무기를 그림
+  Vec2 weaponsPos = {10.0f, 60.0f}; // 무기의 위치
+  Vec2 weaponsSize = {100.0f, 50.0f}; // 무기의 크기
   
-  for(int weaponIdx = 0; weaponIdx < gameState->player.weapons.count; weaponIdx++)
+  for(int weaponIdx = 0; weaponIdx < gameState->player.weapons.count; weaponIdx++) // 무기의 개수만큼 반복
   {
-    Weapon* weapon = &gameState->player.weapons[weaponIdx];
+    Weapon* weapon = &gameState->player.weapons[weaponIdx]; // 무기의 정보를 가져옴
     
-    SpriteID weaponSpriteID = SPRITE_ICON_WHIP;
-    switch(weapon->ID)
+    SpriteID weaponSpriteID = SPRITE_ICON_WHIP; // 무기의 아이콘을 저장할 변수
+    switch(weapon->ID) // 무기의 종류에 따라 아이콘을 설정
     {
-      case WEAPON_WHIP:
+      case WEAPON_WHIP: // 채찍
         weaponSpriteID = SPRITE_ICON_WHIP;
         break;
-      case WEAPON_GARLIC:
+      case WEAPON_GARLIC: // 마늘
         weaponSpriteID = SPRITE_ICON_CIRCLE;
         break;
-      case WEAPON_MAGMA_RING:
+      case WEAPON_MAGMA_RING: // 마그마 링
         weaponSpriteID = SPRITE_ICON_MAGMA_RING;
         break;
     }
     
-    Sprite s = get_sprite(weaponSpriteID);
-    Vec2 weaponPos = weaponsPos + Vec2{weaponsSize.x / 2.0f, weaponsSize.y / 2.0f};
-    draw_sliced_sprite(SPRITE_SLICED_MENU_01, weaponPos, weaponsSize);
-    draw_sprite(weaponSpriteID, weaponPos - Vec2{s.subSize.x / 1.1f, 0.0f}, vec_2(s.subSize) * 2.0f);
-    std::string weaponlvl = std::to_string(weapon->level);
-    weaponlvl = weaponlvl.c_str();
-    char* cweaponlvl = &weaponlvl[0];
-    draw_text(cweaponlvl, weaponPos + Vec2{10.0f, 0.0f});
-    weaponsPos.y += 50.0f;
+    Sprite s = get_sprite(weaponSpriteID); // 아이콘의 정보를 가져옴
+    Vec2 weaponPos = weaponsPos + Vec2{weaponsSize.x / 2.0f, weaponsSize.y / 2.0f}; // 아이콘의 위치를 설정
+    draw_sliced_sprite(SPRITE_SLICED_MENU_01, weaponPos, weaponsSize); // 아이콘을 그림
+    draw_sprite(weaponSpriteID, weaponPos - Vec2{s.subSize.x / 1.1f, 0.0f}, vec_2(s.subSize) * 2.0f); // 아이콘을 그림
+    std::string weaponlvl = std::to_string(weapon->level); // 무기의 레벨을 문자열로 변환
+    weaponlvl = weaponlvl.c_str(); // 문자열로 변환
+    char* cweaponlvl = &weaponlvl[0]; // 문자열로 변환 (const char*에서 char*로 변환)
+    draw_text(cweaponlvl, weaponPos + Vec2{10.0f, 0.0f}); // 무기의 레벨을 그림
+    weaponsPos.y += 50.0f; // 다음 무기의 위치를 설정
   }
 }
 
@@ -322,6 +322,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
 {
   local_persist bool slowdown = false;
   local_persist bool pause = false;
+  global_variable int erase_cnt = 3; // 초기화 횟수
   
   // Make sure we use the correct memory
   {
@@ -343,6 +344,15 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
   if(is_key_pressed(KEY_F))
   {
     slowdown = !slowdown;
+  }
+
+  if(is_key_pressed(KEY_R)) // R키를 누르면
+  {
+    if (erase_cnt > 0) // 초기화 횟수가 0보다 크면
+    {
+      gameState->enemies.clear(); // 적 초기화
+      erase_cnt--; // 초기화 횟수 감소
+    }
   }
   
   if(pause)
@@ -726,7 +736,7 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
         }
       }
       
-      draw_weapons();
+      draw_weapons(); // 현재 소지하고 있는 무기를 그림
       draw_exp_bar();
       
       Vec4 boxColor = COLOR_WHITE;
@@ -850,78 +860,78 @@ __declspec(dllexport) void update_game(GameState* gameStateIn, Input* inputIn,
       break;
     }
     
-    case GAME_STATE_LOST:
+    case GAME_STATE_LOST: // 게임 패배 상태
     {
-      draw_sprite(SPRITE_MAIN_MENU_BACKGROUND,
+      draw_sprite(SPRITE_MAIN_MENU_BACKGROUND, // 배경 이미지 그리기
                   vec_2(input->screenSize) / 2.0f,
                   vec_2(SCREEN_SIZE));
       
-      Vec4 boxColor = COLOR_WHITE;
-      Vec2 OverInfoMenuSize = {800.0f, 600.0f};
-      Vec2 OverInfoMenuPos = vec_2(input->screenSize) / 2.0f;
-      draw_text("You Lost!", OverInfoMenuPos + Vec2{-100.0f, - 250.0f});
-      draw_sliced_sprite(SPRITE_SLICED_MENU_01, OverInfoMenuPos, OverInfoMenuSize);
+      Vec4 boxColor = COLOR_WHITE; // 박스 색상
+      Vec2 OverInfoMenuSize = {800.0f, 600.0f}; // 박스 크기
+      Vec2 OverInfoMenuPos = vec_2(input->screenSize) / 2.0f; // 박스 위치
+      draw_text("You Lost!", OverInfoMenuPos + Vec2{-100.0f, - 250.0f}); // 패배 문구
+      draw_sliced_sprite(SPRITE_SLICED_MENU_01, OverInfoMenuPos, OverInfoMenuSize); // 박스 그리기
       // 생존시간, 도달 레벨, 처치한 적, 무기 레벨 표기
-      Vec2 contentPos = OverInfoMenuPos + Vec2{-280.0f, -150.0f};
-      std::string info = "Survival Time: " + std::to_string(gameState->totalTime) + "\n" +
+      Vec2 contentPos = OverInfoMenuPos + Vec2{-280.0f, -150.0f}; // 내용 위치
+      std::string info = "Survival Time: " + std::to_string(gameState->totalTime) + "\n" + // 생존시간, 도달 레벨, 처치한 적 표기
            "Reached Level: " + std::to_string(gameState->player.level) + "\n" +
            "Enemies Killed: " + std::to_string(gameState->enemiesKilled) + "\n";
-      info = info.c_str();
-      char* cinfo = &info[0];
+      info = info.c_str(); // 문자열 변환
+      char* cinfo = &info[0]; // 문자열 변환
       // weapon 이미지 불러오기
       draw_text(cinfo, contentPos);
       std:: string weaponInfo = "";
       // weapon에는 whip, garlic, magma ring가 있음
-      Vec2 exPos = {contentPos.x - 25.0f, contentPos.y + 100.0f};
-      for(int weaponIdx = 0; weaponIdx < gameState->player.weapons.count; weaponIdx++)
+      Vec2 exPos = {contentPos.x - 25.0f, contentPos.y + 100.0f}; // 무기 위치
+      for(int weaponIdx = 0; weaponIdx < gameState->player.weapons.count; weaponIdx++) // 무기 정보 표기
       {
-        Weapon* weapon = &gameState->player.weapons[weaponIdx];
-        std::string weaponName = "";
-        switch(weapon->ID)
+        Weapon* weapon = &gameState->player.weapons[weaponIdx]; // 무기 정보
+        std::string weaponName = ""; // 무기 이름
+        switch(weapon->ID) // 무기 종류에 따라 이미지 표기
         {
-          case WEAPON_WHIP:
+          case WEAPON_WHIP: // 채찍
             draw_sprite(SPRITE_ICON_WHIP, exPos, vec_2(30.0f));
             exPos.y += 50.0f;
             weaponName = "Whip";
             break;
-          case WEAPON_GARLIC:
+          case WEAPON_GARLIC: // 마늘
             draw_sprite(SPRITE_ICON_CIRCLE, exPos, vec_2(30.0f));
             exPos.y += 50.0f;
             weaponName = "Garlic";
             break;
-          case WEAPON_MAGMA_RING:
+          case WEAPON_MAGMA_RING: // 마그마 링
             draw_sprite(SPRITE_ICON_MAGMA_RING, exPos, vec_2(30.0f));
             exPos.y += 50.0f;
             weaponName = "Magma Ring";
             break;
         }
-        weaponInfo += weaponName + " Level: " + std::to_string(weapon->level) + "\n\n";
+        weaponInfo += weaponName + " Level: " + std::to_string(weapon->level) + "\n\n"; // 무기 이름, 레벨 표기
       }
-      weaponInfo = weaponInfo.c_str();
-      char* cweaponInfo = &weaponInfo[0];
-      draw_text(cweaponInfo, contentPos + Vec2{0.0f, 100.0f});
+      weaponInfo = weaponInfo.c_str(); // 문자열 변환
+      char* cweaponInfo = &weaponInfo[0]; // 문자열 변환
+      draw_text(cweaponInfo, contentPos + Vec2{0.0f, 100.0f}); // 무기 정보 표기
       
-      Vec2 buttonsPos = {input->screenSize.x / 2.0f, 650.0f};
-      Vec2 buttonsSize = {240.0f, 70.0f};
+      Vec2 buttonsPos = {input->screenSize.x / 2.0f, 650.0f}; // 버튼 위치
+      Vec2 buttonsSize = {240.0f, 70.0f}; // 버튼 크기
       
       // Main Menu Button
       {
-        SpriteID buttonSprite = SPRITE_SLICED_MENU_02;
+        SpriteID buttonSprite = SPRITE_SLICED_MENU_02; // 버튼 이미지
       
-        if(point_in_rect(input->mousePosScreen ,
+        if(point_in_rect(input->mousePosScreen , // 마우스 위치 확인
                          {buttonsPos - buttonsSize / 2.0f, buttonsSize}))
         {
-          buttonSprite = SPRITE_SLICED_MENU_03;
+          buttonSprite = SPRITE_SLICED_MENU_03; // 버튼 이미지 변경
       
-          if(is_key_pressed(KEY_LEFT_MOUSE))
+          if(is_key_pressed(KEY_LEFT_MOUSE)) // 마우스 클릭 시
           {
-            gameState->state = GAME_STATE_MAIN_MENU;
+            gameState->state = GAME_STATE_MAIN_MENU; // 메인 메뉴로 이동
           }
         }
       
-        draw_sliced_sprite(buttonSprite, buttonsPos, buttonsSize);
-        draw_text("Main Menu", buttonsPos + Vec2{-102.0f});
-        buttonsPos.y += 100.0f;
+        draw_sliced_sprite(buttonSprite, buttonsPos, buttonsSize); // 버튼 그리기
+        draw_text("Main Menu", buttonsPos + Vec2{-102.0f}); // 버튼 텍스트
+        buttonsPos.y += 100.0f; // 버튼 위치 변경
       }
       
       break;
@@ -1433,6 +1443,10 @@ internal void update_level(float dt)
                 {
                   gameState->player.hp -= enemy->attack;
                   enemy->attackTime = 0.0f;
+                  DamageNumber dn = {}; // 데미지 표기를 위해.
+                  dn.pos = gameState->player.pos; // 플레이어 위치
+                  dn.value = enemy->attack; // 공격력
+                  gameState->damageNumbers.add(dn); // 데미지 표기 (플레이어가 받는)
                   
                   if(gameState->player.hp <= 0)
                   {
@@ -1928,6 +1942,6 @@ internal void update_level(float dt)
     gameState->state = GAME_STATE_WON;
   }
   
-  draw_weapons();
+  draw_weapons(); // 현재 소지 중인 무기들을 그린다
   draw_exp_bar();
 }
