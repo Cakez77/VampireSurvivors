@@ -4,7 +4,7 @@ extern "C"
 {
 #define APIENTRYP APIENTRY *
 #define GLAPI extern
-  
+
 #define WGL_DRAW_TO_WINDOW_ARB            0x2001
 #define WGL_SUPPORT_OPENGL_ARB            0x2010
 #define WGL_DOUBLE_BUFFER_ARB             0x2011
@@ -25,7 +25,7 @@ extern "C"
 #define WGL_CONTEXT_FLAGS_ARB             0x2094
 #define WGL_CONTEXT_DEBUG_BIT_ARB         0x00000001
 #define WGL_SAMPLE_BUFFERS_ARB            0x2041
-  
+
 #define GL_TRUE                           1
 #define GL_ARRAY_BUFFER                   0x8892
 #define GL_SHADER_STORAGE_BUFFER          0x90D2
@@ -54,7 +54,7 @@ extern "C"
 #define GL_CLAMP_TO_BORDER                0x812D
 #define GL_LINEAR                         0x2601
 #define GL_LINEAR_MIPMAP_LINEAR           0x2703
-#define GL_LINEAR_MIPMAP_NEAREST          0x2701 
+#define GL_LINEAR_MIPMAP_NEAREST          0x2701
 #define GL_DEPTH_COMPONENT16              0x81A5
 #define GL_DEPTH_COMPONENT24              0x81A6
 #define GL_DEPTH_COMPONENT32              0x81A7
@@ -112,13 +112,14 @@ extern "C"
 #define GL_CCW                            0x0901
 #define GL_DEBUG_SOURCE_SHADER_COMPILER   0x8248
 #define GL_DEBUG_TYPE_ERROR               0x824C
-  
+#define GL_READ_FRAMEBUFFER               0x8CA8
+
   typedef          float         khronos_float_t;
   typedef signed   long long int khronos_ssize_t;
   typedef unsigned long long int khronos_usize_t;
   typedef signed   long long int khronos_intptr_t;
   typedef unsigned long long int khronos_uintptr_t;
-  
+
   typedef unsigned int GLuint;
   typedef void GLvoid;
   typedef unsigned int GLenum;
@@ -130,11 +131,11 @@ extern "C"
   typedef khronos_ssize_t GLsizeiptr;
   typedef khronos_intptr_t GLintptr;
   typedef unsigned int GLbitfield;
-  
+
   typedef BOOL (WINAPI* PFNWGLCHOOSEPIXELFORMATARBPROC) (HDC hdc, const int *piAttribIList, const FLOAT *pfAttribFList, UINT nMaxFormats, int *piFormats, UINT *nNumFormats);
   typedef HGLRC (WINAPI* PFNWGLCREATECONTEXTATTRIBSARBPROC) (HDC hDC, HGLRC hShareContext, const int *attribList);
   typedef void (APIENTRY* GLDEBUGPROC)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
-  
+
   GLAPI void APIENTRY glDeleteTextures (GLsizei n, const GLuint *textures);
   GLAPI void APIENTRY glGenTextures (GLsizei n, GLuint *textures);
   GLAPI void APIENTRY glBindTexture (GLenum target, GLuint texture);
@@ -156,7 +157,7 @@ extern "C"
   GLAPI void APIENTRY glDrawArrays (GLenum mode, GLint first, GLsizei count);
   GLAPI void APIENTRY glFrontFace (GLenum mode);
   //GLAPI void APIENTRY glDrawElementsInstanced (GLenum mode, GLsizei count, GLenum type, const void *indices, GLsizei instancecount);
-  
+
 }
 
 internal PROC get_gl_proc(char* proc_name)

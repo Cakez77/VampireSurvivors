@@ -159,7 +159,7 @@ internal bool platform_create_window(int width, int height, char* title)
   wc.lpfnWndProc = window_callback;
   wc.hInstance = instance;
   wc.hIcon = icon;
-  wc.hCursor = LoadCursor(NULL, IDC_ARROW); // NULL; => Manage the cursor manually
+  //wc.hCursor = LoadCursor(NULL, IDC_ARROW); // NULL; => Manage the cursor manually
   wc.lpszClassName = "cakez_window_class";
   
   if (!RegisterClassA(&wc))
@@ -487,7 +487,6 @@ int main()
   
   return 0;
 }
-
 
 //#############################################################
 //          Implementations from platform.h
